@@ -6,11 +6,12 @@ The current prototype focuses on entropy-related concepts across thermodynamics,
 
 ## Status
 
-This repository is a research prototype under active development.
+This repository is a working prototype with a connected full-stack application.
 
-- Backend domain models, services, API endpoints, and seed dataset are implemented.
-- CLI and frontend are under active implementation.
-- Some test areas outside the currently stabilized tracks may still be in progress.
+- **Backend**: FastAPI + SQLAlchemy with 12 services, 8 API routers, JWT auth, event store, and linking agent.
+- **Frontend**: Next.js 15 + React 19, connected to the live backend API.
+- **CLI**: Typer-based command-line client.
+- **Tests**: 61 backend tests passing.
 
 ## Why This Project Exists
 
@@ -46,8 +47,16 @@ Setup:
 ```bash
 cd backend
 python -m venv .venv
-.venv\Scripts\activate
+.venv\Scripts\activate      # Windows
+# source .venv/bin/activate  # Linux/macOS
 pip install -e .[dev]
+```
+
+Seed the demo dataset and create an admin user:
+
+```bash
+python -c "from manage import seed; seed()"
+python -c "from manage import create_admin; create_admin()"
 ```
 
 Run tests:
@@ -76,13 +85,26 @@ npm install
 npm run dev
 ```
 
+The frontend connects to the backend at `http://localhost:8000` by default.
+Set `NEXT_PUBLIC_API_URL` environment variable to change the API URL, and `CS_API_TOKEN` for server-side authentication.
+
+### Docker Compose (Full Stack)
+
+Run the entire stack with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+This starts PostgreSQL, the backend API (port 8000), and the frontend (port 3000).
+
 ### Demo Dataset
 
 You can seed the entropy-centered demo dataset with:
 
 ```bash
 cd backend
-python -m app.seeds.entropy_dataset
+python -c "from manage import seed; seed()"
 ```
 
 The seeded dataset currently contains:

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ClaimCard } from "@/components/claims/ClaimCard";
 import { ClaimTable } from "@/components/claims/ClaimTable";
 import { FilterBar } from "@/components/common/FilterBar";

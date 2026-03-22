@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.agent import router as agent_router
+from app.api.auth import router as auth_router
 from app.api.claims import router as claims_router
 from app.api.concepts import router as concepts_router
 from app.api.contexts import router as contexts_router
@@ -11,6 +12,7 @@ from app.api.terms import router as terms_router
 
 
 api_router = APIRouter(prefix="/api/v1")
+api_router.include_router(auth_router)
 api_router.include_router(claims_router)
 api_router.include_router(concepts_router)
 api_router.include_router(contexts_router)

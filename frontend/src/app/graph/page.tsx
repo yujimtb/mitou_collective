@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { ForceGraph } from "@/components/graph/ForceGraph";
 import { FilterBar } from "@/components/common/FilterBar";
 import { Header } from "@/components/layout/Header";

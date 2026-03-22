@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Header } from "@/components/layout/Header";
 import { ProposalCard } from "@/components/proposals/ProposalCard";
 import { listProposals } from "@/lib/api";
