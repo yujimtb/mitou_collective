@@ -1,0 +1,35 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Databases
+*.db
+backend/track_a.db
+
+# Node / Next.js
+node_modules/
+.next/
+frontend/tsconfig.tsbuildinfo
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.agent/
+.claude/
+.codex/
+.gemini/
+.github/
+.opencode/
+mitou_proposal_*.txt
