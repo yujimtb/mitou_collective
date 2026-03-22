@@ -1,9 +1,13 @@
 import type {
+  ClaimCreateInput,
   ClaimRead,
+  ConceptCreateInput,
   ConceptRead,
   ConnectionType,
+  ContextCreateInput,
   ContextRead,
   CrossFieldConnectionRead,
+  EvidenceCreateInput,
   EvidenceRead,
   PaginatedResponse,
   ProposalRead,
@@ -79,6 +83,18 @@ export interface ContextDetailData {
   claims: ClaimRead[];
 }
 
+export interface ReferenceData {
+  contexts: ContextRead[];
+  concepts: ConceptRead[];
+  terms: TermRead[];
+  fields: string[];
+}
+
+export interface SuggestionTriggerResult {
+  job_id: string;
+  items: ProposalRead[];
+}
+
 export interface GraphNode {
   id: string;
   kind: "claim" | "concept";
@@ -141,12 +157,30 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
       ...authHeaders(),
       ...init?.headers,
     },
-    next: { revalidate: 30 },
+    ...(init?.cache === "no-store" ? { cache: "no-store" } : { next: { revalidate: 30 } }),
   });
   if (!res.ok) {
-    throw new Error(`API ${res.status}: ${url}`);
+    const body = await res.text();
+    let detail = "";
+    if (body) {
+      try {
+        const parsed = JSON.parse(body) as { error?: { message?: string }; detail?: string };
+        detail = parsed.error?.message ?? parsed.detail ?? body;
+      } catch {
+        detail = body;
+      }
+    }
+    throw new Error(detail || `API ${res.status}: ${url}`);
   }
   return res.json() as Promise<T>;
+}
+
+async function apiMutate<T>(path: string, body: unknown): Promise<T> {
+  return api<T>(path, {
+    method: "POST",
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
 }
 
 function qs(params: Record<string, string | number | boolean | undefined | null>): string {
@@ -245,6 +279,10 @@ export async function getClaimDetail(claimId: string): Promise<ClaimDetailData> 
   return { claim, concepts, contexts, evidence: evidenceItems, pendingProposals, history };
 }
 
+export async function createClaim(data: ClaimCreateInput): Promise<ClaimRead> {
+  return apiMutate<ClaimRead>("/claims", data);
+}
+
 /* ------------------------------------------------------------------ */
 /*  Concepts                                                           */
 /* ------------------------------------------------------------------ */
@@ -252,6 +290,10 @@ export async function getClaimDetail(claimId: string): Promise<ClaimDetailData> 
 export async function listConcepts(): Promise<ConceptRead[]> {
   const res = await api<PaginatedResponse<ConceptRead>>("/concepts?per_page=100");
   return res.items.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export async function createConcept(data: ConceptCreateInput): Promise<ConceptRead> {
+  return apiMutate<ConceptRead>("/concepts", data);
 }
 
 export async function getConceptDetail(conceptId: string): Promise<ConceptDetailData> {
@@ -317,6 +359,14 @@ export async function getContextDetail(contextId: string): Promise<ContextDetail
   };
 }
 
+export async function createContext(data: ContextCreateInput): Promise<ContextRead> {
+  return apiMutate<ContextRead>("/contexts", data);
+}
+
+export async function createEvidence(data: EvidenceCreateInput): Promise<EvidenceRead> {
+  return apiMutate<EvidenceRead>("/evidence", data);
+}
+
 /* ------------------------------------------------------------------ */
 /*  Proposals & Reviews                                                */
 /* ------------------------------------------------------------------ */
@@ -346,6 +396,18 @@ export async function submitReview(submission: ReviewSubmission): Promise<Propos
   });
 
   return api<ProposalRead>(`/proposals/${encodeURIComponent(submission.proposalId)}`);
+}
+
+export async function triggerAgentSuggestions(
+  entityType: string,
+  entityId: string,
+  targetField?: string,
+): Promise<SuggestionTriggerResult> {
+  return apiMutate<SuggestionTriggerResult>("/agent/suggest-connections", {
+    source_entity_type: entityType,
+    source_entity_id: entityId,
+    target_field: targetField ?? null,
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -468,11 +530,17 @@ export async function searchKnowledge(query: string, entityType = "all"): Promis
 /*  Reference data                                                     */
 /* ------------------------------------------------------------------ */
 
-export async function getReferenceData() {
-  const res = await api<PaginatedResponse<ContextRead>>("/contexts?per_page=100");
-  const contexts = res.items;
+export async function getReferenceData(): Promise<ReferenceData> {
+  const [contextRes, conceptRes, termRes] = await Promise.all([
+    api<PaginatedResponse<ContextRead>>("/contexts?per_page=100"),
+    api<PaginatedResponse<ConceptRead>>("/concepts?per_page=100"),
+    api<PaginatedResponse<TermRead>>("/terms?per_page=100"),
+  ]);
+  const contexts = contextRes.items;
   return {
     contexts,
+    concepts: conceptRes.items.sort((a, b) => a.label.localeCompare(b.label)),
+    terms: termRes.items.sort((a, b) => a.surface_form.localeCompare(b.surface_form)),
     fields: Array.from(new Set(contexts.map((c) => c.field))),
   };
 }

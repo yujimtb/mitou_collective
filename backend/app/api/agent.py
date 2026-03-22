@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import uuid
 
+from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi.responses import JSONResponse
 from pydantic import Field
-from fastapi import APIRouter, Depends, Query, status
 
 from app.api.dependencies import get_linking_agent
 from app.auth.dependencies import require_permission
 from app.auth.policy_engine import Operation
 from app.interfaces import ILinkingAgent
-from app.schemas import ActorRead, PaginatedResponse, ProposalRead, ProposalStatus
+from app.schemas import ActorRead, ErrorResponse, PaginatedResponse, ProposalRead, ProposalStatus
 from app.schemas.common import SchemaModel
 
 
@@ -30,9 +31,23 @@ router = APIRouter(prefix="/agent", tags=["agent"])
 @router.post("/suggest-connections", response_model=SuggestConnectionsAccepted, status_code=status.HTTP_202_ACCEPTED)
 async def suggest_connections(
     payload: SuggestConnectionsRequest,
+    request: Request,
     actor: ActorRead = Depends(require_permission(Operation.CREATE_PROPOSAL)),
     linking_agent: ILinkingAgent = Depends(get_linking_agent),
-) -> SuggestConnectionsAccepted:
+) -> SuggestConnectionsAccepted | JSONResponse:
+    llm_config = getattr(request.app.state, "llm_config", None)
+    if not llm_config or not getattr(llm_config, "api_key", ""):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=ErrorResponse(
+                error={
+                    "code": "llm_unavailable",
+                    "message": "LLM service is not configured",
+                    "details": {},
+                }
+            ).model_dump(mode="json"),
+        )
+
     items = await linking_agent.suggest_connections(
         source_entity_type=payload.source_entity_type,
         source_entity_id=payload.source_entity_id,

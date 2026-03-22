@@ -4,7 +4,7 @@ Thank you for your interest in contributing.
 
 ## Scope
 
-This repository is currently maintained as a research prototype. Contributions are welcome, but changes should remain aligned with the current architectural direction and specification documents.
+This repository is a research prototype. Contributions are welcome, but changes should remain aligned with the current architectural direction and specification documents.
 
 ## Before Opening a Pull Request
 
@@ -17,21 +17,43 @@ Please:
 
 ## Development Workflow
 
-Backend:
+### Backend
 
 ```bash
 cd backend
 pip install -e .[dev]
-python -m pytest tests
+python manage.py seed          # seed demo data
+python manage.py create-admin  # create admin + JWT token
+python manage.py serve         # start dev server (port 8000)
+python -m pytest tests         # run 61 tests
 ```
 
-Frontend:
+### Frontend
 
 ```bash
 cd frontend
 npm install
-npm run typecheck
+CS_API_TOKEN="<token>" npm run dev   # start dev server (port 3000)
+npm run build                        # type-check + build
 ```
+
+### CLI
+
+```bash
+cd cli
+pip install -e .[dev]
+python -m pytest tests
+```
+
+### Docker Compose (full stack)
+
+```bash
+docker compose up --build
+```
+
+## Multi-Agent Development
+
+This project supports parallel development by multiple coding agents. See [parallel_dev_guide.md](../parallel_dev_guide.md) for track assignments and [docs/agent-assignments.md](docs/agent-assignments.md) for the collision map.
 
 ## Style Expectations
 

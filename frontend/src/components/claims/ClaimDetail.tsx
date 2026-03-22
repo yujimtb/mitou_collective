@@ -1,12 +1,45 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+
+import { useToast } from "@/components/Toast";
+import { CreateEvidenceDialog } from "@/components/CreateEvidenceDialog";
 import { CIRDisplay } from "@/components/cir/CIRDisplay";
 import { TrustBadge } from "@/components/common/TrustBadge";
 import { EvidenceCard } from "@/components/evidence/EvidenceCard";
+import { ProposalCard } from "@/components/proposals/ProposalCard";
+import { triggerAgentSuggestions } from "@/lib/api";
 import type { ClaimDetailData } from "@/lib/api";
+import type { ClaimRead } from "@/lib/types";
 
-export function ClaimDetail({ data }: { data: ClaimDetailData }) {
+export function ClaimDetail({
+  data,
+  availableClaims,
+}: {
+  data: ClaimDetailData;
+  availableClaims: ClaimRead[];
+}) {
+  const router = useRouter();
+  const { pushToast } = useToast();
+  const [isGenerating, startTransition] = useTransition();
   const { claim, concepts, contexts, evidence, pendingProposals, history } = data;
+
+  const handleGenerateSuggestions = () => {
+    startTransition(async () => {
+      try {
+        await triggerAgentSuggestions("claim", claim.id, contexts[0]?.field);
+        pushToast({ kind: "success", message: "AI connection suggestions generated." });
+        router.refresh();
+      } catch (error) {
+        pushToast({
+          kind: "error",
+          message: error instanceof Error ? error.message : "Failed to generate AI suggestions.",
+        });
+      }
+    });
+  };
 
   return (
     <div className="detail-grid">
@@ -50,44 +83,42 @@ export function ClaimDetail({ data }: { data: ClaimDetailData }) {
 
         <section className="card-stack">
           <div className="card">
-            <p className="eyebrow">Evidence</p>
-            <div className="card-stack" style={{ marginTop: 14 }}>
-              {evidence.map((item) => (
-                <EvidenceCard evidence={item} key={item.id} />
-              ))}
+            <div className="actions-row" style={{ justifyContent: "space-between" }}>
+              <p className="eyebrow" style={{ marginBottom: 0 }}>
+                Evidence
+              </p>
+              <CreateEvidenceDialog claims={availableClaims} initialClaimId={claim.id} />
             </div>
+            {evidence.length ? (
+              <div className="card-stack" style={{ marginTop: 14 }}>
+                {evidence.map((item) => (
+                  <EvidenceCard evidence={item} key={item.id} />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state" style={{ marginTop: 14 }}>
+                No evidence has been linked to this claim yet.
+              </div>
+            )}
           </div>
         </section>
       </section>
 
       <section className="section-stack">
         <div className="card">
-          <p className="eyebrow">AI Suggestions</p>
+          <div className="actions-row" style={{ justifyContent: "space-between" }}>
+            <p className="eyebrow" style={{ marginBottom: 0 }}>
+              AI Suggestions
+            </p>
+            <button className="button" disabled={isGenerating} onClick={handleGenerateSuggestions} type="button">
+              {isGenerating ? "Generating..." : "AI接続候補を生成"}
+            </button>
+          </div>
           {pendingProposals.length ? (
             <div className="proposal-stack" style={{ marginTop: 14 }}>
-              {pendingProposals.map((proposal) => {
-                const confidence = Number(proposal.payload.confidence ?? 0);
-                return (
-                  <article className="proposal-card" key={proposal.id}>
-                    <div className="badge-row">
-                      <span className="status-pill status-pending">Pending</span>
-                      <span className="chip">{String(proposal.payload.connection_type)}</span>
-                    </div>
-                    <p className="supporting-text" style={{ margin: 0 }}>
-                      {proposal.rationale}
-                    </p>
-                    <div className="confidence-bar">
-                      <span style={{ width: `${Math.round(confidence * 100)}%` }} />
-                    </div>
-                    <p className="small">Confidence {Math.round(confidence * 100)}%</p>
-                    <div className="actions-row">
-                      <Link className="button" href="/review">
-                        Review
-                      </Link>
-                    </div>
-                  </article>
-                );
-              })}
+              {pendingProposals.map((proposal) => (
+                <ProposalCard key={proposal.id} onReviewed={() => router.refresh()} proposal={proposal} />
+              ))}
             </div>
           ) : (
             <div className="empty-state" style={{ marginTop: 14 }}>

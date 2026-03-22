@@ -1,119 +1,50 @@
 # CollectiveScience 並行開発ガイド
 
-コーディングエージェントが並行して作業できるよう、作業を独立したトラックに分割する。各トラックはファイルレベルで衝突しないように設計されている。
+複数のコーディングエージェントが並行して作業できるよう、プロジェクトを独立したトラックに分割する。各トラックはファイルレベルで衝突しないように設計されている。
 
 ---
 
-## 全体依存関係図
+## 現在の実装状況
+
+Phase 0〜3はすべて実装・テスト済み。バックエンドテスト61/61パス、フロントエンドビルド成功。
+
+| レイヤー | 状態 | 主要成果物 |
+|----------|------|-----------|
+| 共通型定義 | ✅完了 | `schemas/`（14ファイル）, `interfaces/`（15ファイル）, `lib/types.ts` |
+| DBモデル | ✅完了 | `models/`（12モデル）, Alembicマイグレーション |
+| Event Store | ✅完了 | `events/`（store, commands, projections, models） |
+| 認証 | ✅完了 | `auth/`（JWT, PolicyEngine, dependencies） |
+| ドメインサービス | ✅完了 | `services/`（12サービス） |
+| ワークフロー | ✅完了 | `workflows/`（state_machine, trust_transitions, change_applier） |
+| AI Agent | ✅完了 | `agent/`（7モジュール） |
+| REST API | ✅完了 | `api/`（9ルート + router + dependencies + errors） |
+| CLI | ✅完了 | `cli/cs/`（6コマンドグループ） |
+| Web UI | ✅完了 | `frontend/src/`（6画面グループ + 15コンポーネント） |
+| デモデータ | ✅完了 | `seeds/`（6ファイル + 7 JSONデータ） |
+
+---
+
+## エージェント分割マップ
 
 ```
-Phase 0: 共通型定義・インターフェース契約
-  │  （全トラックの前提、1エージェントで実行）
-  ▼
-Phase 1: 基盤レイヤー（3トラック並行）
-  ├── Track A: DBスキーマ + SQLAlchemyモデル
-  ├── Track B: Event Store基盤
-  └── Track C: Trust Model / ActorRef / 認証
-  │
-  ▼
-Phase 2: ビジネスロジック（3トラック並行）
-  ├── Track D: ドメインサービス（CRUD）
-  ├── Track E: Proposal/Reviewワークフロー
-  └── Track F: AI Linking Agent
-  │
-  ▼
-Phase 3: インターフェース（4トラック並行）
-  ├── Track G: REST APIエンドポイント
-  ├── Track H: CLI
-  ├── Track I: Web UI
-  └── Track J: デモデータセット
+Agent 1: Backend – Models / Events / Auth（データ基盤）
+Agent 2: Backend – Services / Workflows（ビジネスロジック）
+Agent 3: Backend – API Routes + main.py（HTTPインターフェース）
+Agent 4: Backend – AI Linking Agent（AI連携パイプライン）
+Agent 5: Frontend（Next.js Web UI）
+Agent 6: CLI（コマンドラインツール）
+Agent 7: Seeds / Data（デモデータ・テストデータ）
+Agent 8: Specs / Docs（仕様書・ドキュメント）
 ```
 
 ---
 
-## Phase 0: 共通型定義・インターフェース契約
+## Agent 1: Backend – Models / Events / Auth（データ基盤）
 
-**目的**: 全トラックが参照する型定義とインターフェースを先に確定する。これにより後続のPhaseが互いを待たずに並行開発できる。
+データモデル、イベントストア、認証・認可の基盤レイヤーを担当する。
 
-**担当**: 1エージェント（他の全トラックの前提）
+### 排他ファイル
 
-### 成果物
-
-```
-backend/
-├── app/
-│   ├── schemas/                    ← Pydantic スキーマ（API入出力型）
-│   │   ├── __init__.py
-│   │   ├── term.py                 # TermCreate, TermRead, TermUpdate
-│   │   ├── concept.py              # ConceptCreate, ConceptRead, ConceptUpdate
-│   │   ├── claim.py                # ClaimCreate, ClaimRead, ClaimUpdate
-│   │   ├── context.py              # ContextCreate, ContextRead, ContextUpdate
-│   │   ├── evidence.py             # EvidenceCreate, EvidenceRead, EvidenceUpdate
-│   │   ├── proposal.py             # ProposalCreate, ProposalRead
-│   │   ├── review.py               # ReviewCreate, ReviewRead
-│   │   ├── actor.py                # ActorCreate, ActorRead
-│   │   ├── referent.py             # ReferentCreate, ReferentRead, ReferentUpdate
-│   │   ├── cir.py                  # CIRCreate, CIRRead
-│   │   ├── connection.py           # CrossFieldConnectionCreate, Read
-│   │   ├── search.py               # SearchQuery, SearchResult
-│   │   └── common.py               # PaginatedResponse, ErrorResponse, enums
-│   └── interfaces/                 ← サービスインターフェース（抽象基底クラス）
-│       ├── actor_service.py        # IActorService
-│       ├── referent_service.py     # IReferentService
-│       ├── __init__.py
-│       ├── claim_service.py        # IClaimService
-│       ├── concept_service.py      # IConceptService
-│       ├── context_service.py      # IContextService
-│       ├── evidence_service.py     # IEvidenceService
-│       ├── term_service.py         # ITermService
-│       ├── cir_service.py          # ICIRService
-│       ├── connection_service.py   # IConnectionService
-│       ├── search_service.py       # ISearchService
-│       ├── event_store.py          # IEventStore
-│       ├── proposal_service.py     # IProposalService
-│       ├── review_service.py       # IReviewService
-│       └── linking_agent.py        # ILinkingAgent
-frontend/
-└── src/
-    └── lib/
-        └── types.ts                ← TypeScript型定義（APIレスポンス型）
-```
-
-### `common.py` に定義するEnum群
-
-```python
-# ClaimType: definition | theorem | empirical | conjecture | meta
-# TrustStatus: established | tentative | disputed | ai_suggested
-# EvidenceType: textbook | paper | experiment | proof | expert_opinion
-# Reliability: high | medium | low | unverified
-# ProposalType: create_claim | link_claims | update_trust | add_evidence | connect_concepts
-# ProposalStatus: pending | in_review | approved | rejected | withdrawn
-# ReviewDecision: approve | reject | request_changes
-# ConnectionType: equivalent | analogous | generalizes | contradicts | complements
-# ActorType: human | ai_agent
-# TrustLevel: admin | reviewer | contributor | observer
-# EvidenceRelationship: supports | contradicts | partially_supports
-```
-
-### 完了条件
-
-- [ ] すべてのPydanticスキーマが定義され、import可能
-- [ ] すべてのサービスインターフェース（ABC）が定義済み
-- [ ] TypeScript型定義がフロントエンドで利用可能
-- [ ] `backend/pyproject.toml` と `frontend/package.json` が初期化済み
-- [ ] `docker-compose.yml`（PostgreSQL）が起動可能
-
----
-
-## Phase 1: 基盤レイヤー（3トラック並行）
-
-### Track A: DBスキーマ + SQLAlchemyモデル
-
-**参照spec**: `knowledge-graph/spec.md`
-
-**入力契約**: Phase 0の `schemas/` の型定義
-
-**担当ファイル**（排他）:
 ```
 backend/app/models/
 ├── __init__.py
@@ -129,116 +60,60 @@ backend/app/models/
 ├── proposal.py             # Proposal
 ├── review.py               # Review
 └── actor.py                # Actor
+
+backend/app/events/
+├── __init__.py
+├── store.py                # EventStore実装
+├── commands.py             # Command定義（ClaimCreated等）
+├── projections.py          # Projection Engine
+└── models.py               # Event SQLAlchemy model
+
+backend/app/auth/
+├── __init__.py
+├── jwt.py                  # JWTトークン生成・検証
+├── dependencies.py         # FastAPI Depends（get_current_actor等）
+└── policy_engine.py        # PolicyEngine（権限チェック）
+
 backend/alembic/
 ├── env.py
 └── versions/
     └── 001_initial_schema.py
 ```
 
-**作業内容**:
-1. SQLAlchemyモデル定義（全エンティティ）
-2. N:M関連テーブル（term_concepts, claim_contexts, claim_concepts, claim_evidence）
-3. CHECK制約（enum値）、INDEX定義
-4. Alembicマイグレーションファイル生成
-5. `conftest.py` にテスト用DBセッションfixture作成
+### 参照spec
+- `openspec/specs/knowledge-graph/spec.md`（モデル定義）
+- `openspec/specs/event-store/spec.md`（イベントストア）
+- `openspec/specs/trust-model/spec.md`（認証・信頼モデル）
 
-**出力契約**: `from app.models import Claim, Concept, ...` でインポート可能
-
-**完了条件**:
-- [ ] `alembic upgrade head` でスキーマ構築成功
-- [ ] 全テーブルCREATE確認
-- [ ] 全N:M関連テーブルが正しくJOIN可能
-
----
-
-### Track B: Event Store基盤
-
-**参照spec**: `event-store/spec.md`
-
-**入力契約**: Phase 0の `interfaces/event_store.py`
-
-**担当ファイル**（排他）:
+### テスト
 ```
-backend/app/events/
-├── __init__.py
-├── store.py                # EventStore実装（PostgreSQL）
-├── commands.py             # Command定義（ClaimCreated等）
-├── projections.py          # Projection Engine
-└── models.py               # Event SQLAlchemy model
+backend/tests/test_models_smoke.py
 backend/tests/test_events/
-├── test_store.py
-├── test_commands.py
-└── test_projections.py
-```
-
-**作業内容**:
-1. Eventテーブル SQLAlchemyモデル
-2. EventStore クラス（append, query_by_aggregate, query_by_sequence）
-3. Command定義（各event_type用のdataclass/Pydantic model）
-4. Projection Engine（イベント再生→リードモデル更新）
-5. ユニットテスト
-
-**出力契約**: `IEventStore` インターフェースを実装した `EventStore` クラス
-
-**完了条件**:
-- [ ] イベントのappendとqueryが動作
-- [ ] Projection再構築が動作
-- [ ] sequence_numberの単調増加が保証されている
-
----
-
-### Track C: Trust Model / ActorRef / 認証
-
-**参照spec**: `trust-model/spec.md`
-
-**入力契約**: Phase 0の `schemas/actor.py`, `interfaces/` の認証関連
-
-**担当ファイル**（排他）:
-```
-backend/app/auth/
-├── __init__.py
-├── jwt.py                  # JWTトークン生成・検証
-├── dependencies.py         # FastAPI Depends（get_current_actor等）
-└── policy_engine.py        # PolicyEngine（権限チェック）
-backend/app/services/
-└── actor_service.py        # ActorRef CRUD
 backend/tests/test_auth/
-├── test_jwt.py
-├── test_policy_engine.py
-└── test_dependencies.py
 ```
 
-**作業内容**:
-1. JWT生成・検証ユーティリティ
-2. FastAPI依存性注入（`get_current_actor`）
-3. PolicyEngine（trust_level × 操作種別の権限マトリクス）
-4. 自己レビュー禁止ロジック
-5. 段階的自律性レベル設定（Level 0をデフォルト）
-6. ActorRef CRUDサービス
+### 出力契約
+- `from app.models import Claim, Concept, ...` でモデルインポート可能
+- `IEventStore` 実装クラスを提供
+- `Depends(get_current_actor)` で認証済みActorを取得可能
 
-**出力契約**: `Depends(get_current_actor)` でActorRefが取得可能
-
-**完了条件**:
-- [ ] JWTトークンの発行・検証が動作
-- [ ] trust_level別の権限チェックが動作
-- [ ] 自己レビュー禁止が動作
+### 注意
+- スキーマ変更時は必ず新しいAlembicマイグレーションファイルを追加する
+- `backend/app/schemas/` と `backend/app/interfaces/` は共有契約（後述）のため、変更時は全エージェントに通知が必要
 
 ---
 
-## Phase 2: ビジネスロジック（3トラック並行）
+## Agent 2: Backend – Services / Workflows（ビジネスロジック）
 
-> Phase 1の3トラックがすべて完了後に開始
+ドメインサービス（CRUD + 検索）とProposal/Reviewワークフローを担当する。
 
-### Track D: ドメインサービス（CRUD）
+### 排他ファイル
 
-**参照spec**: `knowledge-graph/spec.md`, `rest-api/spec.md`（エンティティCRUD部分）
-
-**入力契約**: Track Aのモデル, Track Bの EventStore, Track Cの認証
-
-**担当ファイル**（排他）:
 ```
 backend/app/services/
 ├── __init__.py
+├── _shared.py              # 共通ユーティリティ（SessionFactory等）
+├── actor_service.py        # ActorService
 ├── claim_service.py        # ClaimService（CRUD + バージョニング）
 ├── concept_service.py      # ConceptService
 ├── context_service.py      # ContextService
@@ -247,138 +122,50 @@ backend/app/services/
 ├── referent_service.py     # ReferentService
 ├── cir_service.py          # CIRService
 ├── connection_service.py   # CrossFieldConnectionService
-└── search_service.py       # SearchService（横断検索）
-backend/tests/test_services/
-├── test_claim_service.py
-├── test_concept_service.py
-├── test_context_service.py
-├── test_evidence_service.py
-├── test_term_service.py
-└── test_search_service.py
-```
-
-**作業内容**:
-1. 各エンティティのCRUD（Create / Read / List with filter / Update）
-2. Claim作成時にClaimCreatedイベントをEventStoreに記録
-3. Claimバージョニング（更新時にversion++)
-4. N:M関連の管理（Claim-Context, Claim-Concept, Claim-Evidence, Term-Concept）
-5. 横断検索サービス（PostgreSQL FTS）
-6. 各サービスのユニットテスト
-
-**出力契約**: `IClaimService` 等のインターフェースを実装したサービスクラス群
-
-**完了条件**:
-- [ ] 全エンティティのCRUDが動作
-- [ ] CRUD操作がEventStoreにイベントを記録する
-- [ ] フィルタ付き一覧取得が動作
-- [ ] 横断検索が動作
-
----
-
-### Track E: Proposal/Reviewワークフロー
-
-**参照spec**: `proposal-review/spec.md`
-
-**入力契約**: Track Aのモデル, Track Bの EventStore, Track CのPolicyEngine
-
-**担当ファイル**（排他）:
-```
-backend/app/services/
-├── proposal_service.py     # ProposalService（ステートマシン）
+├── search_service.py       # SearchService
+├── proposal_service.py     # ProposalService
 └── review_service.py       # ReviewService
+
 backend/app/workflows/
 ├── __init__.py
 ├── state_machine.py        # Proposalステートマシン
 ├── trust_transitions.py    # 信頼状態遷移ルール
 └── change_applier.py       # Proposal承認時の変更適用
+```
+
+### 参照spec
+- `openspec/specs/knowledge-graph/spec.md`（エンティティCRUD）
+- `openspec/specs/proposal-review/spec.md`（ワークフロー）
+- `openspec/specs/trust-model/spec.md`（信頼状態遷移）
+
+### テスト
+```
+backend/tests/test_services/
 backend/tests/test_workflows/
-├── test_state_machine.py
-├── test_trust_transitions.py
-├── test_change_applier.py
-├── test_proposal_service.py
-└── test_review_service.py
 ```
 
-**作業内容**:
-1. Proposalステートマシン（pending → in_review → approved/rejected/withdrawn）
-2. Review作成・記録
-3. Proposal承認時の変更適用（proposal_type別: create_claim, link_claims, update_trust, add_evidence, connect_concepts）
-4. 信頼状態遷移ルール（ai_suggested → tentative → established ↔ disputed）
-5. PolicyEngineとの連携（権限チェック、自己レビュー禁止）
-6. 各ワークフローのユニットテスト
+### 入力依存
+- Agent 1 の `models/`, `events/`, `auth/`
+- 共有契約: `schemas/`, `interfaces/`
 
-**出力契約**: `IProposalService`, `IReviewService` を実装したサービスクラス
-
-**完了条件**:
-- [ ] Proposalステートマシンの全遷移が動作
-- [ ] 不正な状態遷移が拒否される
-- [ ] 承認時に対象エンティティへの変更が正しく適用される
-- [ ] 信頼状態遷移がルール通りに動作
+### 出力契約
+- `IClaimService`, `IProposalService` 等のインターフェース実装クラスを提供
+- Agent 3（API）および Agent 4（Agent）が利用する
 
 ---
 
-### Track F: AI Linking Agent
+## Agent 3: Backend – API Routes + main.py（HTTPインターフェース）
 
-**参照spec**: `linking-agent/spec.md`
+REST APIエンドポイントとFastAPIアプリ初期化を担当する。
 
-**入力契約**: Track Aのモデル, Track DのClaimService/ConceptService（リード系のみ）, Track EのProposalService
+### 排他ファイル
 
-**担当ファイル**（排他）:
-```
-backend/app/agent/
-├── __init__.py
-├── linking_agent.py        # LinkingAgent本体
-├── trigger.py              # トリガーモジュール
-├── context_collector.py    # コンテキスト収集
-├── candidate_search.py     # 候補Claim検索（埋め込みベクトル含む）
-├── candidate_generator.py  # LLM接続候補生成
-├── proposal_formatter.py   # Proposal自動生成・重複チェック
-├── prompts.py              # LLMプロンプトテンプレート
-└── config.py               # 確信度閾値等の設定
-backend/tests/test_agent/
-├── test_linking_agent.py
-├── test_context_collector.py
-├── test_candidate_search.py
-├── test_candidate_generator.py
-└── test_proposal_formatter.py
-```
-
-**作業内容**:
-1. トリガーモジュール（新規Claim/Concept検知、手動リクエスト）
-2. コンテキスト収集（Claim/Concept起点で関連情報を収集）
-3. 候補Claim検索（分野横断、意味的類似性）
-4. LLM接続候補生成（プロンプト構築、API呼び出し、出力パース）
-5. Proposal自動生成（確信度閾値フィルタ、重複チェック）
-6. エラーハンドリング（リトライ、失敗ログ）
-7. ユニットテスト（LLM呼び出しはモック）
-
-**出力契約**: `ILinkingAgent` インターフェースを実装した `LinkingAgent` クラス
-
-**注意**: Track Dのサービスのリード系メソッドに依存するが、Phase 0で定義したインターフェースに対してコーディングできるため、Track Dと同時開始可能。テスト時にはモックを使用する。
-
-**完了条件**:
-- [ ] 手動リクエストで接続候補が生成される
-- [ ] 確信度閾値未満の候補がフィルタされる
-- [ ] 重複Proposalが作成されない
-- [ ] LLM APIエラー時にリトライが動作する
-
----
-
-## Phase 3: インターフェース（4トラック並行）
-
-> Phase 2の完了後に開始（ただしモック/スタブを使えばPhase 2と部分的に並行可能）
-
-### Track G: REST APIエンドポイント
-
-**参照spec**: `rest-api/spec.md`
-
-**入力契約**: Phase 2の全サービスクラス, Track Cの認証Depends
-
-**担当ファイル**（排他）:
 ```
 backend/app/api/
 ├── __init__.py
 ├── router.py               # メインルーター（/api/v1 prefix）
+├── dependencies.py         # サービスDI（get_claim_service等）
+├── errors.py               # エラーハンドラー
 ├── claims.py               # /api/v1/claims
 ├── concepts.py             # /api/v1/concepts
 ├── contexts.py             # /api/v1/contexts
@@ -387,42 +174,144 @@ backend/app/api/
 ├── proposals.py            # /api/v1/proposals
 ├── agent.py                # /api/v1/agent
 └── search.py               # /api/v1/search
-backend/app/main.py          # FastAPIアプリ初期化
-backend/tests/test_api/
-├── test_claims_api.py
-├── test_concepts_api.py
-├── test_contexts_api.py
-├── test_evidence_api.py
-├── test_proposals_api.py
-├── test_agent_api.py
-└── test_search_api.py
+
+backend/app/main.py          # FastAPIアプリ初期化、ルーター登録、CORS
 ```
 
-**作業内容**:
-1. 各エンティティのCRUDエンドポイント
-2. Proposal/Reviewエンドポイント
-3. Agent候補生成・一覧エンドポイント
-4. 横断検索エンドポイント
-5. ページネーション・フィルタリング
-6. JWT認証ミドルウェア適用
-7. 入力バリデーション・エラーレスポンス
-8. 統合テスト
+### 参照spec
+- `openspec/specs/rest-api/spec.md`
 
-**完了条件**:
-- [ ] 全エンドポイントがOpenAPI仕様に沿って動作
-- [ ] 認証が全保護エンドポイントで機能
-- [ ] バリデーションエラーが422で返される
-- [ ] エラーレスポンスが統一フォーマット
+### テスト
+```
+backend/tests/test_api/
+backend/tests/conftest.py     # 共有fixture（client, auth_header等）
+```
+
+### 入力依存
+- Agent 1 の認証Depends
+- Agent 2 のサービスクラス群
+- 共有契約: `schemas/`, `interfaces/`
+
+### 出力契約
+- OpenAPI準拠のHTTPエンドポイントを提供
+- Agent 5（Frontend）、Agent 6（CLI）がHTTP経由で利用
+
+### 注意
+- `conftest.py` は統合テスト全体で共有されるため、変更時は注意
+- 新しいAPIルート追加時は `main.py` のルーター登録と `api/dependencies.py` のDI設定も更新する
 
 ---
 
-### Track H: CLI
+## Agent 4: Backend – AI Linking Agent（AI連携パイプライン）
 
-**参照spec**: `cli/spec.md`
+LLMを使った分野横断リンク提案パイプラインを担当する。
 
-**入力契約**: Track GのREST APIエンドポイント仕様（OpenAPI schema）
+### 排他ファイル
 
-**担当ファイル**（排他）:
+```
+backend/app/agent/
+├── __init__.py
+├── linking_agent.py        # LinkingAgent本体
+├── trigger.py              # トリガーモジュール
+├── context_collector.py    # コンテキスト収集
+├── candidate_search.py     # 候補Claim検索
+├── candidate_generator.py  # LLM接続候補生成
+├── proposal_formatter.py   # Proposal自動生成・重複チェック
+├── prompts.py              # LLMプロンプトテンプレート
+└── config.py               # 確信度閾値等の設定
+```
+
+### 参照spec
+- `openspec/specs/linking-agent/spec.md`
+
+### テスト
+```
+backend/tests/test_agent/
+```
+
+### 入力依存
+- Agent 2 のサービスクラス（リード系メソッド + ProposalService）
+- 共有契約: `interfaces/linking_agent.py`
+
+### 出力契約
+- `ILinkingAgent` 実装クラスを提供
+- Agent 3 の `/api/v1/agent` エンドポイントから呼び出される
+
+---
+
+## Agent 5: Frontend（Next.js Web UI）
+
+Next.js 15 + React 19 + Tailwind CSS によるWeb UIを担当する。
+
+### 排他ファイル
+
+```
+frontend/
+├── package.json
+├── next.config.js
+├── tailwind.config.js
+├── tsconfig.json
+├── next-env.d.ts
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx              # 共通レイアウト
+│   │   ├── page.tsx                # ダッシュボード
+│   │   ├── claims/
+│   │   │   ├── page.tsx            # Claim一覧
+│   │   │   └── [id]/page.tsx       # Claim詳細
+│   │   ├── concepts/
+│   │   │   ├── page.tsx
+│   │   │   └── [id]/page.tsx
+│   │   ├── contexts/
+│   │   │   ├── page.tsx
+│   │   │   └── [id]/page.tsx
+│   │   ├── graph/page.tsx          # グラフビュー
+│   │   ├── review/page.tsx         # レビューキュー
+│   │   └── search/page.tsx         # 検索
+│   ├── components/
+│   │   ├── layout/                 # Sidebar, Header, StatsCard
+│   │   ├── claims/                 # ClaimCard, ClaimTable, ClaimDetail
+│   │   ├── evidence/               # EvidenceCard
+│   │   ├── proposals/              # ProposalCard, ReviewDialog
+│   │   ├── graph/                  # ForceGraph
+│   │   ├── common/                 # FilterBar, Pagination, SearchBar, TrustBadge
+│   │   └── cir/                    # CIRDisplay
+│   └── lib/
+│       ├── api.ts                  # APIクライアント（サーバーサイドfetch）
+│       └── types.ts                # TypeScript型定義
+└── public/
+```
+
+### 参照spec
+- `openspec/specs/web-ui/spec.md`
+
+### 入力依存
+- Agent 3 のREST APIエンドポイント（HTTP経由）
+- 環境変数 `CS_API_TOKEN`（サーバーサイドfetchの認証トークン）
+
+### サブ分割（Agent 5 内で更に分割可能）
+
+| Sub-Agent | 画面 | 担当ファイル |
+|-----------|------|-------------|
+| 5-1 | レイアウト + ダッシュボード | `layout.tsx`, `page.tsx`, `layout/` |
+| 5-2 | Claim一覧 + 詳細 | `claims/`, `claims/`, `evidence/`, `cir/` |
+| 5-3 | Context + Concept画面 | `contexts/`, `concepts/`, `common/` |
+| 5-4 | レビューキュー | `review/`, `proposals/` |
+| 5-5 | グラフビュー | `graph/` |
+| 5-6 | 検索 | `search/` |
+
+### 注意
+- 全ページに `export const dynamic = "force-dynamic"` が必要（SSRでAPI呼び出しするため）
+- `lib/api.ts` は共通APIクライアントのため、変更時はすべての画面に影響する
+
+---
+
+## Agent 6: CLI（コマンドラインツール）
+
+Typer + httpx によるCLIツールを担当する。
+
+### 排他ファイル
+
 ```
 cli/
 ├── pyproject.toml
@@ -434,7 +323,7 @@ cli/
 │   ├── formatters.py       # テーブル/JSON出力フォーマッタ
 │   └── commands/
 │       ├── __init__.py
-│       ├── auth.py         # cs auth login
+│       ├── auth.py         # cs auth login / create-admin
 │       ├── claim.py        # cs claim list/get/create/history
 │       ├── concept.py      # cs concept list/get/connections
 │       ├── proposal.py     # cs proposal list/review
@@ -446,247 +335,303 @@ cli/
     └── test_agent_commands.py
 ```
 
-**作業内容**:
-1. Typer CLIフレームワーク初期化
-2. APIクライアント（httpx使用）
-3. 認証管理（`cs auth login`、config.toml保存）
-4. 各コマンドグループ実装
-5. テーブル表示（rich使用）とJSON出力モード
-6. エラーハンドリング
+### 参照spec
+- `openspec/specs/cli/spec.md`
 
-**注意**: REST APIのOpenAPIスキーマさえあれば、APIが完成前でもクライアントコードを書ける。モックサーバーでテスト可能。
-
-**完了条件**:
-- [ ] 全コマンドがREST APIを正しく呼び出す
-- [ ] `--json` モードが全コマンドで動作
-- [ ] 認証設定が永続化される
+### 入力依存
+- Agent 3 のREST APIエンドポイント（HTTP経由）
 
 ---
 
-### Track I: Web UI
+## Agent 7: Seeds / Data（デモデータ・テストデータ）
 
-**参照spec**: `web-ui/spec.md`
+Seedスクリプトとデモ用JSONデータを担当する。
 
-**入力契約**: Phase 0の `lib/types.ts`, Track GのREST APIエンドポイント仕様
+### 排他ファイル
 
-**担当ファイル**（排他）:
-```
-frontend/
-├── package.json
-├── next.config.js
-├── tailwind.config.js
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx                    # ダッシュボード
-│   │   ├── claims/
-│   │   │   ├── page.tsx                # Claim一覧
-│   │   │   └── [id]/page.tsx           # Claim詳細
-│   │   ├── concepts/
-│   │   │   ├── page.tsx
-│   │   │   └── [id]/page.tsx
-│   │   ├── contexts/
-│   │   │   ├── page.tsx
-│   │   │   └── [id]/page.tsx
-│   │   ├── graph/page.tsx              # グラフビュー
-│   │   ├── review/page.tsx             # レビューキュー
-│   │   └── search/page.tsx             # 検索
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Sidebar.tsx
-│   │   │   ├── Header.tsx
-│   │   │   └── StatsCard.tsx
-│   │   ├── claims/
-│   │   │   ├── ClaimCard.tsx
-│   │   │   ├── ClaimTable.tsx
-│   │   │   └── ClaimDetail.tsx
-│   │   ├── evidence/
-│   │   │   └── EvidenceCard.tsx
-│   │   ├── proposals/
-│   │   │   ├── ProposalCard.tsx
-│   │   │   └── ReviewDialog.tsx
-│   │   ├── graph/
-│   │   │   └── ForceGraph.tsx
-│   │   ├── common/
-│   │   │   ├── FilterBar.tsx
-│   │   │   ├── Pagination.tsx
-│   │   │   ├── SearchBar.tsx
-│   │   │   └── TrustBadge.tsx
-│   │   └── cir/
-│   │       └── CIRDisplay.tsx
-│   └── lib/
-│       ├── api.ts                      # APIクライアント
-│       └── types.ts                    # 型定義（Phase 0で作成済み）
-└── public/
-```
-
-**サブ分割（Track I内で更に並行可能）**:
-
-| Sub-Track | 画面 | 担当ファイル |
-|-----------|------|-------------|
-| I-1 | レイアウト + ダッシュボード | `layout.tsx`, `page.tsx`, `Sidebar`, `Header`, `StatsCard` |
-| I-2 | Claim一覧 + 詳細 | `claims/`, `ClaimCard`, `ClaimTable`, `ClaimDetail`, `EvidenceCard`, `CIRDisplay` |
-| I-3 | Context + Concept画面 | `contexts/`, `concepts/`, `FilterBar`, `TrustBadge` |
-| I-4 | レビューキュー | `review/`, `ProposalCard`, `ReviewDialog` |
-| I-5 | グラフビュー | `graph/`, `ForceGraph` |
-| I-6 | 検索 | `search/`, `SearchBar`, `Pagination` |
-
-**作業内容**:
-1. Next.js + Tailwind CSS 初期化
-2. 共通レイアウト（サイドバー、ヘッダー）
-3. APIクライアント（fetch wrapper）
-4. 各画面の実装（上記サブトラック参照）
-5. レスポンシブ対応（デスクトップ + タブレット）
-
-**注意**: APIのモックデータ（MSW等）を使えば、バックエンド完成前に並行開発可能。
-
-**完了条件**:
-- [ ] 全9画面が動作
-- [ ] フィルタリング・ページネーションが動作
-- [ ] レビュー操作（Approve/Reject）が動作
-- [ ] グラフビューでノード・エッジが表示される
-
----
-
-### Track J: デモデータセット
-
-**参照spec**: `demo-dataset/spec.md`
-
-**入力契約**: Track Aのモデル, Track DのサービスまたはTrack GのREST API
-
-**担当ファイル**（排他）:
 ```
 backend/app/seeds/
 ├── __init__.py
 ├── entropy_dataset.py      # メインのSeedスクリプト
-├── data/
-│   ├── contexts.json       # Context定義データ
-│   ├── terms.json          # Term定義データ
-│   ├── concepts.json       # Concept定義データ
-│   ├── claims.json         # Claim定義データ（100件+）
-│   ├── evidence.json       # Evidence定義データ（30件+）
-│   ├── connections.json    # Cross-field Connection定義データ
-│   └── cir.json            # CIR定義データ
-└── tests/
-    └── test_seed.py
+└── data/
+    ├── contexts.json       # 6 Context
+    ├── terms.json          # 9 Term
+    ├── concepts.json       # 7 Concept
+    ├── claims.json         # 120 Claim（24 base + 96 generated）
+    ├── evidence.json       # 33 Evidence（8 base + 25 generated）
+    ├── connections.json    # 4 Cross-field Connection
+    └── cir.json            # 3 CIR
+
+backend/manage.py               # CLI管理コマンド（seed / create-admin / serve）
 ```
 
-**作業内容**:
-1. 5つのContext定義（Classical Thermodynamics, Statistical Mechanics, Shannon Info Theory, Quantum Info Theory, Algorithmic Info Theory）
-2. Term / Concept マッピングデータ（英語・日本語）
-3. 100件以上のClaim（各Context + 分野横断）
-4. 30件以上のEvidence（教科書・論文）
-5. Cross-field Connection初期データ（4件以上）
-6. CIR例（3〜5件）
-7. Seedスクリプト（冪等、CLI実行可能）
+### 参照spec
+- `openspec/specs/demo-dataset/spec.md`
 
-**注意**: JSONデータファイルの作成はモデルやAPIの完成を待たずに開始可能。Seedスクリプトの実装部分のみTrack A/Dに依存する。
-
-**完了条件**:
-- [ ] Seedスクリプトが冪等に実行できる
-- [ ] 100件以上のClaim、30件以上のEvidence、5つのContextが投入される
-- [ ] すべてのN:M関連が正しく設定される
+### 入力依存
+- Agent 1 のモデル
+- Agent 2 のサービス（`entropy_dataset.py` がサービス経由でデータ投入）
 
 ---
 
-## 並行度サマリー
+## Agent 8: Specs / Docs（仕様書・ドキュメント）
 
-| Phase | 並行トラック数 | 最大エージェント数 |
-|-------|-----------|---------------|
-| Phase 0 | 1 | 1 |
-| Phase 1 | 3（A, B, C） | 3 |
-| Phase 2 | 3（D, E, F） | 3 |
-| Phase 3 | 4+（G, H, I, J）※Iは更に6分割可 | 4〜9 |
+仕様書とドキュメントを担当する。コードには触れない。
 
-### 最大並行時（Phase 3）のファイル衝突マップ
-
-各トラックが触るファイルが完全に分離されていることを確認:
+### 排他ファイル
 
 ```
-Track G: backend/app/api/*,  backend/app/main.py
-Track H: cli/*
-Track I: frontend/*
-Track J: backend/app/seeds/*
-```
+openspec/
+├── config.yaml
+├── changes/                # 変更提案（OpenSpec形式）
+└── specs/
+    ├── cli/spec.md
+    ├── demo-dataset/spec.md
+    ├── event-store/spec.md
+    ├── knowledge-graph/spec.md
+    ├── linking-agent/spec.md
+    ├── proposal-review/spec.md
+    ├── rest-api/spec.md
+    ├── trust-model/spec.md
+    └── web-ui/spec.md
 
-→ **衝突なし**: 4エージェントが同時に作業可能
+docs/
+├── architecture.md
+├── demo-dataset.md
+├── roadmap.md
+└── specs-index.md
+
+README.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+SECURITY.md
+prototype_design.md
+```
 
 ---
 
-## Phase間の移行条件
+## 共有契約（全エージェント共通）
 
-### Phase 0 → Phase 1
+以下のファイル群は複数エージェントが参照する**契約境界**。変更時は関連エージェント全員に影響するため、単一エージェントが責任を持って変更し、他に通知する。
 
-- [ ] `backend/app/schemas/` 全ファイルが作成済み
-- [ ] `backend/app/interfaces/` 全ファイルが作成済み
-- [ ] `frontend/src/lib/types.ts` が作成済み
-- [ ] `docker-compose.yml` でPostgreSQLが起動可能
-- [ ] `backend/pyproject.toml` と `frontend/package.json` が初期化済み
+### Pydanticスキーマ（API入出力型）
+```
+backend/app/schemas/
+├── __init__.py             # 全スキーマの re-export
+├── common.py               # Enum群, PaginatedResponse, ErrorResponse
+├── term.py                 # TermCreate, TermRead, TermUpdate
+├── concept.py              # ConceptCreate, ConceptRead, ConceptUpdate
+├── claim.py                # ClaimCreate, ClaimRead, ClaimUpdate
+├── context.py              # ContextCreate, ContextRead, ContextUpdate
+├── evidence.py             # EvidenceCreate, EvidenceRead, EvidenceUpdate
+├── proposal.py             # ProposalCreate, ProposalRead
+├── review.py               # ReviewCreate, ReviewRead
+├── actor.py                # ActorCreate, ActorRead
+├── referent.py             # ReferentCreate, ReferentRead, ReferentUpdate
+├── cir.py                  # CIRCreate, CIRRead
+├── connection.py           # CrossFieldConnectionCreate, Read
+└── search.py               # SearchQuery, SearchResult
+```
 
-### Phase 1 → Phase 2
+### サービスインターフェース（抽象基底クラス）
+```
+backend/app/interfaces/
+├── __init__.py             # 全インターフェースの re-export
+├── claim_service.py        # IClaimService
+├── concept_service.py      # IConceptService
+├── context_service.py      # IContextService
+├── evidence_service.py     # IEvidenceService
+├── term_service.py         # ITermService
+├── actor_service.py        # IActorService
+├── referent_service.py     # IReferentService
+├── cir_service.py          # ICIRService
+├── connection_service.py   # IConnectionService
+├── search_service.py       # ISearchService
+├── event_store.py          # IEventStore
+├── proposal_service.py     # IProposalService
+├── review_service.py       # IReviewService
+└── linking_agent.py        # ILinkingAgent
+```
 
-- [ ] Track A: `alembic upgrade head` が成功
-- [ ] Track B: EventStoreの append/query テストがパス
-- [ ] Track C: JWT認証 + PolicyEngineテストがパス
+### TypeScript型定義
+```
+frontend/src/lib/types.ts    # APIレスポンス型（フロントエンド側の契約）
+```
 
-### Phase 2 → Phase 3
+### 共有契約の変更ルール
 
-- [ ] Track D: 全エンティティCRUDテストがパス
-- [ ] Track E: Proposalステートマシン全遷移テストがパス
-- [ ] Track F: Linking Agent手動リクエストテストがパス（LLMモック）
+1. **スキーマ追加**: 既存フィールドに影響なければ各エージェント独立で追加可能
+2. **スキーマ変更（フィールド名変更・削除）**: 全関連エージェントに通知必須
+3. **インターフェース変更（メソッド追加）**: 実装側のエージェントが追加、他に通知
+4. **インターフェース変更（シグネチャ変更）**: 全関連エージェントに通知必須
+5. **types.ts変更**: Agent 5（Frontend）が責任を持つ。バックエンドのスキーマ変更に追従
 
-### Phase 3 完了
+---
 
-- [ ] Track G: 全APIエンドポイントの統合テストがパス
-- [ ] Track H: 全CLIコマンドがAPIを正しく呼び出すテストがパス
-- [ ] Track I: 全画面がブラウザで表示・操作可能
-- [ ] Track J: Seedスクリプトでデータ投入成功
+## 依存関係マップ
+
+```
+共有契約（schemas/, interfaces/, types.ts）
+    │
+    ├──→ Agent 1: Models / Events / Auth
+    │        │
+    │        ├──→ Agent 2: Services / Workflows
+    │        │        │
+    │        │        ├──→ Agent 3: API Routes
+    │        │        │        │
+    │        │        │        ├──→ Agent 5: Frontend（HTTP経由）
+    │        │        │        ├──→ Agent 6: CLI（HTTP経由）
+    │        │        │        └──→ Agent 7: Seeds（直接 or HTTP経由）
+    │        │        │
+    │        │        └──→ Agent 4: AI Agent
+    │        │
+    │        └──→ Agent 7: Seeds（モデル直接利用）
+    │
+    └──→ Agent 8: Specs / Docs（コード参照のみ、変更なし）
+```
+
+### 並行作業可能な組み合わせ
+
+| 同時作業可能 | 理由 |
+|-------------|------|
+| Agent 3 + Agent 4 | 別ディレクトリ（`api/` vs `agent/`）、同じサービスを参照するが排他なし |
+| Agent 5 + Agent 6 | 完全に独立（`frontend/` vs `cli/`）、APIはHTTP経由 |
+| Agent 5 + Agent 7 | 完全に独立（`frontend/` vs `seeds/`） |
+| Agent 6 + Agent 7 | 完全に独立（`cli/` vs `seeds/`） |
+| Agent 1 + Agent 5 | 完全に独立（`models/` vs `frontend/`） |
+| Agent 1 + Agent 6 | 完全に独立（`models/` vs `cli/`） |
+| Agent 8 + 全Agent | Docsは読み取り専用のため常に並行可能 |
+
+### 注意が必要な組み合わせ
+
+| 組み合わせ | 注意点 |
+|-----------|--------|
+| Agent 1 + Agent 2 | Agent 2がAgent 1のモデル変更を参照するため、モデル変更後にAgent 2に通知 |
+| Agent 2 + Agent 3 | Agent 3がAgent 2のサービスをDIするため、メソッド追加時に通知 |
+| Agent 2 + Agent 4 | Agent 4がAgent 2のサービスを利用するため、インターフェース変更時に通知 |
+
+---
+
+## ファイル衝突なしマップ
+
+各エージェントが触るファイルが完全に分離されていることの確認:
+
+```
+Agent 1: backend/app/models/*,  backend/app/events/*,   backend/app/auth/*,     backend/alembic/*
+Agent 2: backend/app/services/*, backend/app/workflows/*
+Agent 3: backend/app/api/*,      backend/app/main.py
+Agent 4: backend/app/agent/*
+Agent 5: frontend/*
+Agent 6: cli/*
+Agent 7: backend/app/seeds/*
+Agent 8: openspec/*, docs/*, README.md, *.md（ルート直下ドキュメント）
+```
+
+→ **衝突なし**: 最大8エージェントが同時に作業可能
+
+---
+
+## 技術スタック早見表
+
+| レイヤー | 技術 | バージョン |
+|----------|------|-----------|
+| Backend Framework | FastAPI | - |
+| ORM | SQLAlchemy | 2.x |
+| Migration | Alembic | - |
+| Auth | python-jose (JWT) | - |
+| DB (dev) | SQLite | - |
+| DB (prod) | PostgreSQL | 16 |
+| Frontend Framework | Next.js | 15 |
+| UI Library | React | 19 |
+| CSS | Tailwind CSS | 3.4 |
+| CLI Framework | Typer | - |
+| HTTP Client (CLI) | httpx | - |
+| Container | Docker Compose | - |
+
+---
+
+## 起動方法
+
+### バックエンド
+```bash
+cd backend
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+### フロントエンド
+```bash
+cd frontend
+CS_API_TOKEN="<JWT Token>" npm run dev
+# → http://localhost:3000
+```
+
+### JWTトークン取得
+```bash
+cd backend
+python manage.py create-admin
+# → Actor ID と Token が出力される
+```
+
+### Docker Compose（本番風）
+```bash
+docker compose up --build
+```
+
+### テスト実行
+```bash
+# backend
+cd backend && python -m pytest -q
+
+# frontend
+cd frontend && npm run build
+
+# cli
+cd cli && python -m pytest -q
+```
 
 ---
 
 ## エージェントへの指示テンプレート
 
-各トラックのエージェントに渡す指示の雛形:
+各エージェントに渡す指示の雛形:
 
 ```
-あなたは CollectiveScience プロジェクトの [Track X: トラック名] を担当します。
+あなたは CollectiveScience プロジェクトの [Agent X: トラック名] を担当します。
 
 ## コンテキスト
 - プロジェクト概要: prototype_design.md を参照
+- 並行開発ガイド: parallel_dev_guide.md を参照
 - 詳細仕様: openspec/specs/[capability]/spec.md を参照
 - 共通型定義: backend/app/schemas/ を参照
 - サービスインターフェース: backend/app/interfaces/ を参照
 
-## あなたの担当範囲
-[担当ファイル一覧]
+## あなたの排他的担当範囲
+[排他ファイル一覧]
 
 ## 触ってはいけないファイル
-上記以外のすべてのファイル（他のトラックが担当）
+上記以外のすべてのファイル（他のエージェントが担当）
+
+## 共有契約
+schemas/, interfaces/, types.ts を変更する場合は他のエージェントへの通知が必要
 
 ## 作業内容
-[作業内容リスト]
+[具体的なタスク]
 
-## 完了条件
-[完了条件リスト]
-
-## 依存関係
-- 入力: [インポート可能なモジュール]
-- 出力: [他トラックが使う成果物]
+## テスト
+[対応するテストディレクトリ]
 ```
 
 ---
 
-## クイックリファレンス: トラック→Spec対応
+## クイックリファレンス: Agent→Spec対応
 
-| Track | 主要参照Spec | 補助参照Spec |
+| Agent | 主要参照Spec | 補助参照Spec |
 |-------|------------|------------|
-| A: DBスキーマ | knowledge-graph | — |
-| B: Event Store | event-store | — |
-| C: Trust Model | trust-model | — |
-| D: ドメインサービス | knowledge-graph | event-store |
-| E: Proposal/Review | proposal-review | trust-model, event-store |
-| F: Linking Agent | linking-agent | proposal-review |
-| G: REST API | rest-api | 全spec |
-| H: CLI | cli | rest-api |
-| I: Web UI | web-ui | rest-api |
-| J: デモデータ | demo-dataset | knowledge-graph |
+| 1: Models/Events/Auth | knowledge-graph, event-store, trust-model | — |
+| 2: Services/Workflows | knowledge-graph, proposal-review | event-store, trust-model |
+| 3: API Routes | rest-api | 全spec |
+| 4: AI Agent | linking-agent | proposal-review |
+| 5: Frontend | web-ui | rest-api |
+| 6: CLI | cli | rest-api |
+| 7: Seeds/Data | demo-dataset | knowledge-graph |
+| 8: Specs/Docs | 全spec | — |

@@ -1,17 +1,51 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useToast } from "@/components/Toast";
 import { ReviewDialog } from "@/components/proposals/ReviewDialog";
-import type { ProposalRead } from "@/lib/types";
+import type { ProposalRead, ReviewDecision } from "@/lib/types";
 
-export function ProposalCard({ proposal }: { proposal: ProposalRead }) {
+export function ProposalCard({
+  proposal,
+  onReviewed,
+}: {
+  proposal: ProposalRead;
+  onReviewed?: () => void;
+}) {
+  const router = useRouter();
+  const { pushToast } = useToast();
   const [openDecision, setOpenDecision] = useState<"approve" | "reject" | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
 
   const confidence = Number(proposal.payload.confidence ?? 0);
 
+  const handleReviewSuccess = (decision: Extract<ReviewDecision, "approve" | "reject">) => {
+    setOpenDecision(null);
+    setIsClosing(true);
+    pushToast({
+      kind: "success",
+      message: decision === "approve" ? "Proposal approved." : "Proposal rejected.",
+    });
+
+    window.setTimeout(() => {
+      setIsHidden(true);
+      if (onReviewed) {
+        onReviewed();
+        return;
+      }
+      router.refresh();
+    }, 320);
+  };
+
+  if (isHidden) {
+    return null;
+  }
+
   return (
-    <article className="proposal-card card">
+    <article className={`proposal-card card${isClosing ? " proposal-card-fading" : ""}`}>
       <div className="badge-row">
         <span className={`status-pill status-${proposal.status}`}>{proposal.status}</span>
         <span className="type-pill">{proposal.proposal_type}</span>
@@ -39,10 +73,10 @@ export function ProposalCard({ proposal }: { proposal: ProposalRead }) {
 
       {proposal.status === "pending" ? (
         <div className="actions-row">
-          <button className="button" onClick={() => setOpenDecision("approve")} type="button">
+          <button className="button" disabled={isClosing} onClick={() => setOpenDecision("approve")} type="button">
             Approve
           </button>
-          <button className="danger-button" onClick={() => setOpenDecision("reject")} type="button">
+          <button className="danger-button" disabled={isClosing} onClick={() => setOpenDecision("reject")} type="button">
             Reject
           </button>
         </div>
@@ -52,6 +86,7 @@ export function ProposalCard({ proposal }: { proposal: ProposalRead }) {
         <ReviewDialog
           decision={openDecision}
           onClose={() => setOpenDecision(null)}
+          onSuccess={handleReviewSuccess}
           proposal={proposal}
         />
       ) : null}

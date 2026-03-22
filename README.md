@@ -6,12 +6,12 @@ The current prototype focuses on entropy-related concepts across thermodynamics,
 
 ## Status
 
-This repository is a working prototype with a connected full-stack application.
+This repository is a working full-stack prototype with all core subsystems implemented and tested.
 
-- **Backend**: FastAPI + SQLAlchemy with 12 services, 8 API routers, JWT auth, event store, and linking agent.
-- **Frontend**: Next.js 15 + React 19, connected to the live backend API.
-- **CLI**: Typer-based command-line client.
-- **Tests**: 61 backend tests passing.
+- **Backend**: FastAPI + SQLAlchemy with 12 services, 9 API route groups, JWT auth, event store, and AI linking agent with OpenAI/Anthropic adapters. 69 tests passing.
+- **Frontend**: Next.js 15 + React 19 + Tailwind CSS, 10 pages with SSR and client-side creation/review flows connected to the live backend API.
+- **CLI**: Typer-based command-line client with 6 command groups.
+- **Docker**: Docker Compose setup with PostgreSQL 16, backend, and frontend containers.
 
 ## Why This Project Exists
 
@@ -27,11 +27,11 @@ The prototype is designed to support:
 ## Repository Structure
 
 ```text
-backend/     FastAPI + SQLAlchemy backend, tests, seed data
-frontend/    Next.js frontend prototype
-cli/         Typer-based command-line interface
-openspec/    specification documents used during development
-docs/        public-facing project documentation
+backend/     FastAPI + SQLAlchemy backend (12 services, 9 API routes, 69 tests)
+frontend/    Next.js 15 frontend (10 pages, 20 components)
+cli/         Typer-based command-line interface (6 command groups)
+openspec/    OpenSpec specification documents (9 subsystems)
+docs/        Project documentation
 ```
 
 ## Getting Started
@@ -55,8 +55,8 @@ pip install -e .[dev]
 Seed the demo dataset and create an admin user:
 
 ```bash
-python -c "from manage import seed; seed()"
-python -c "from manage import create_admin; create_admin()"
+python manage.py seed
+python manage.py create-admin
 ```
 
 Run tests:
@@ -65,11 +65,32 @@ Run tests:
 python -m pytest tests
 ```
 
-Run the API:
+Run the API server:
 
 ```bash
-uvicorn app.main:app --reload
+python manage.py serve
+# or: uvicorn app.main:app --reload
 ```
+
+To enable real LLM-backed connection suggestions, configure one provider:
+
+```bash
+# OpenAI
+LLM_PROVIDER=openai
+OPENAI_API_KEY=
+LLM_MODEL=gpt-4o
+
+# Anthropic
+# LLM_PROVIDER=anthropic
+# ANTHROPIC_API_KEY=
+# LLM_MODEL=claude-sonnet-4-20250514
+
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS=4096
+LLM_TIMEOUT_SECONDS=60
+```
+
+If no LLM API key is configured, the backend still starts normally, but `POST /api/v1/agent/suggest-connections` returns `503` with `llm_unavailable`.
 
 ### Frontend
 
@@ -86,7 +107,13 @@ npm run dev
 ```
 
 The frontend connects to the backend at `http://localhost:8000` by default.
-Set `NEXT_PUBLIC_API_URL` environment variable to change the API URL, and `CS_API_TOKEN` for server-side authentication.
+Set `CS_API_TOKEN` to a valid JWT for server-side authentication (obtain one via `python manage.py create-admin` in the backend directory).
+
+The current web UI supports:
+
+- creating Claims, Concepts, Contexts, and Evidence from modal dialogs
+- manually triggering AI connection suggestions from the Claim detail page
+- reviewing proposals in-place with toast feedback and automatic refresh
 
 ### Docker Compose (Full Stack)
 
@@ -100,36 +127,61 @@ This starts PostgreSQL, the backend API (port 8000), and the frontend (port 3000
 
 ### Demo Dataset
 
-You can seed the entropy-centered demo dataset with:
+Seed the entropy-centered demo dataset:
 
 ```bash
 cd backend
-python -c "from manage import seed; seed()"
+python manage.py seed
 ```
 
-The seeded dataset currently contains:
+The seeded dataset contains:
 
-- 6 contexts
-- 9 terms
-- 7 concepts
+- 6 contexts (5 fields + cross-field)
+- 9 terms and 7 concepts
 - 120 claims
 - 33 evidence items
 - 4 cross-field connections
 - 3 CIR examples
 
+See [Demo Dataset](docs/demo-dataset.md) for details.
+
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Demo Dataset](docs/demo-dataset.md)
-- [Roadmap](docs/roadmap.md)
-- [Specification Index](docs/specs-index.md)
+- [Architecture](docs/architecture.md) — System design and component overview
+- [Demo Dataset](docs/demo-dataset.md) — Entropy-themed seed data description
+- [Roadmap](docs/roadmap.md) — Current state and future plans
+- [Specification Index](docs/specs-index.md) — OpenSpec documents for all subsystems
+- [Parallel Development Guide](parallel_dev_guide.md) — Multi-agent parallel development setup
+- [Agent Assignments](docs/agent-assignments.md) — Agent roles, file ownership, and collision map
 - [Contributing](CONTRIBUTING.md)
 - [Security](SECURITY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 
 ## OpenSpec
 
-The repository includes specification documents under `openspec/specs/`. These documents describe the intended behavior of the main subsystems and are kept in the repository because they are part of the development process and help explain the architecture.
+The repository includes specification documents under `openspec/specs/`. These documents describe the intended behavior of 9 subsystems (knowledge-graph, event-store, trust-model, proposal-review, linking-agent, rest-api, cli, web-ui, demo-dataset) and are part of the development process.
+
+## Configuration
+
+Copy `.env.example` to `.env` and adjust values as needed:
+
+```bash
+# Backend
+DATABASE_URL=sqlite:///./collective_science.db
+JWT_SECRET=change-me-in-production
+CORS_ORIGINS=http://localhost:3000
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4o
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS=4096
+LLM_TIMEOUT_SECONDS=60
+
+# Frontend
+NEXT_PUBLIC_API_URL=http://localhost:8000
+CS_API_TOKEN=
+```
 
 ## Public Repository Notes
 

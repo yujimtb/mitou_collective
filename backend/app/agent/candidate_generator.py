@@ -9,10 +9,11 @@ from dataclasses import dataclass
 from app.agent.candidate_search import CandidateRecord
 from app.agent.config import LinkingAgentConfig
 from app.agent.context_collector import ClaimContextSnapshot, ConceptContextSnapshot
+from app.agent.llm_client import LLMResponse as ClientLLMResponse
 from app.agent.prompts import build_claim_prompt, build_concept_prompt
 from app.schemas import ConnectionType
 
-LLMResponse = str | dict[str, object] | list[dict[str, object]]
+LLMResponse = str | dict[str, object] | list[dict[str, object]] | ClientLLMResponse
 LLMCallable = Callable[[str], Awaitable[LLMResponse]]
 SleepCallable = Callable[[float], Awaitable[None]]
 
@@ -148,7 +149,9 @@ class CandidateGenerator:
 
     @staticmethod
     def _normalize_response(response: LLMResponse) -> list[dict[str, object]]:
-        if isinstance(response, str):
+        if isinstance(response, ClientLLMResponse):
+            parsed = json.loads(response.content)
+        elif isinstance(response, str):
             parsed = json.loads(response)
         else:
             parsed = response

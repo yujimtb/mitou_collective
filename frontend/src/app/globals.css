@@ -191,12 +191,17 @@ button {
 .search-bar input,
 .search-bar select,
 .dialog-card textarea,
-.dialog-card input {
+.dialog-card input,
+.dialog-card select {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid rgba(32, 70, 74, 0.16);
   background: rgba(255, 255, 255, 0.92);
   color: var(--ink-950);
+}
+
+.dialog-card select[multiple] {
+  min-height: 132px;
 }
 
 .search-bar {
@@ -445,6 +450,11 @@ button {
   gap: 14px;
 }
 
+.proposal-card-fading {
+  animation: proposal-fade-out 0.32s ease forwards;
+  pointer-events: none;
+}
+
 .timeline-item {
   position: relative;
   padding-left: 20px;
@@ -525,12 +535,67 @@ button {
   width: min(100%, 560px);
 }
 
+.dialog-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--ink-900);
+}
+
+.dialog-helper {
+  margin: 0;
+  color: rgba(17, 32, 34, 0.66);
+  font-size: 0.84rem;
+}
+
 .empty-state {
   padding: 28px;
   border-radius: var(--radius-lg);
   border: 1px dashed rgba(23, 48, 51, 0.18);
   color: rgba(17, 32, 34, 0.66);
   text-align: center;
+}
+
+.toast-viewport {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: grid;
+  gap: 10px;
+  z-index: 60;
+}
+
+.toast {
+  min-width: 260px;
+  max-width: min(360px, calc(100vw - 40px));
+  padding: 14px 16px;
+  border-radius: 16px;
+  color: #fff;
+  box-shadow: 0 24px 50px rgba(17, 32, 34, 0.22);
+}
+
+.toast strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.toast-success {
+  background: linear-gradient(135deg, #4f7950, #5f8f5d);
+}
+
+.toast-error {
+  background: linear-gradient(135deg, #b55d4b, #ca6b55);
+}
+
+@keyframes proposal-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 .mobile-nav {

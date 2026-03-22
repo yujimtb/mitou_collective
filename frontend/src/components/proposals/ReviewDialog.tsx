@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { useToast } from "@/components/Toast";
 import { submitReview } from "@/lib/api";
 import type { ProposalRead, ReviewDecision } from "@/lib/types";
 
@@ -10,31 +10,33 @@ export function ReviewDialog({
   proposal,
   decision,
   onClose,
+  onSuccess,
 }: {
   proposal: ProposalRead;
   decision: Extract<ReviewDecision, "approve" | "reject">;
   onClose: () => void;
+  onSuccess: (decision: Extract<ReviewDecision, "approve" | "reject">) => void;
 }) {
-  const router = useRouter();
+  const { pushToast } = useToast();
   const [comment, setComment] = useState("");
   const [confidence, setConfidence] = useState(String(Math.round(Number(proposal.payload.confidence ?? 0.6) * 100)));
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const submit = () => {
     startTransition(async () => {
       try {
-        setError(null);
         await submitReview({
           proposalId: proposal.id,
           decision,
           comment,
           confidence: Math.max(0, Math.min(1, Number(confidence) / 100)),
         });
-        onClose();
-        router.refresh();
+        onSuccess(decision);
       } catch (submissionError) {
-        setError(submissionError instanceof Error ? submissionError.message : "Review failed");
+        pushToast({
+          kind: "error",
+          message: submissionError instanceof Error ? submissionError.message : "Review failed.",
+        });
       }
     });
   };
@@ -68,8 +70,6 @@ export function ReviewDialog({
             value={confidence}
           />
         </label>
-
-        {error ? <p className="small" style={{ color: "#8d4738", margin: 0 }}>{error}</p> : null}
 
         <div className="actions-row">
           <button className="ghost-button" onClick={onClose} type="button">

@@ -125,6 +125,41 @@ export interface EvidenceRead {
   created_by: ActorRef | null;
 }
 
+export interface ClaimCreateInput {
+  statement: string;
+  claim_type: ClaimType;
+  trust_status?: TrustStatus;
+  context_ids: string[];
+  concept_ids: string[];
+  evidence_ids?: string[];
+  cir_id?: string | null;
+}
+
+export interface ConceptCreateInput {
+  label: string;
+  description: string;
+  field: string;
+  term_ids: string[];
+  referent_id?: string | null;
+}
+
+export interface ContextCreateInput {
+  name: string;
+  description: string;
+  field: string;
+  assumptions: string[];
+  parent_context_id?: string | null;
+}
+
+export interface EvidenceCreateInput {
+  evidence_type: EvidenceType;
+  title: string;
+  source: string;
+  excerpt?: string | null;
+  reliability?: Reliability;
+  claim_links: ClaimEvidenceLink[];
+}
+
 export interface Condition {
   predicate: string;
   argument: string;

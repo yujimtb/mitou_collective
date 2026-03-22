@@ -2,11 +2,12 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
+import { CreateConceptDialog } from "@/components/CreateConceptDialog";
 import { Header } from "@/components/layout/Header";
-import { listConcepts } from "@/lib/api";
+import { getReferenceData, listConcepts } from "@/lib/api";
 
 export default async function ConceptsPage() {
-  const concepts = await listConcepts();
+  const [concepts, referenceData] = await Promise.all([listConcepts(), getReferenceData()]);
 
   return (
     <>
@@ -14,6 +15,10 @@ export default async function ConceptsPage() {
         title="Concept map"
         subtitle="Trace the vocabulary that lets thermodynamics, information theory, and algorithmic descriptions talk to each other."
       />
+
+      <div className="actions-row" style={{ marginBottom: 16 }}>
+        <CreateConceptDialog fields={referenceData.fields} terms={referenceData.terms} />
+      </div>
 
       <section className="concept-grid">
         {concepts.map((concept) => (

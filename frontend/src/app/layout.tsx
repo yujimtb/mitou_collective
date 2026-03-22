@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import "@/app/globals.css";
+import { ToastProvider } from "@/components/Toast";
 import { Sidebar } from "@/components/layout/Sidebar";
 
 export const metadata: Metadata = {
@@ -34,15 +35,17 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="en">
       <body>
-        <div className="shell">
-          <div className="app-frame">
-            <Sidebar />
-            <main className="main-column">
-              <MobileNav />
-              {children}
-            </main>
+        <ToastProvider>
+          <div className="shell">
+            <div className="app-frame">
+              <Sidebar />
+              <main className="main-column">
+                <MobileNav />
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
+        </ToastProvider>
       </body>
     </html>
   );

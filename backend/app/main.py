@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.agent import LLMConfig, create_llm_client
 from app.api import api_router
 from app.api.errors import register_exception_handlers
 from app.events import EventStore
@@ -17,14 +18,11 @@ from app.events.models import EventStoreBase
 from app.models import Base
 from app.services import (
     ActorService,
-    CIRService,
     ClaimService,
     ConceptService,
-    ConnectionService,
     ContextService,
     EvidenceService,
     ProposalService,
-    ReferentService,
     ReviewService,
     SearchService,
     TermService,
@@ -42,6 +40,7 @@ SERVICE_STATE_KEYS = (
     "review_service",
     "linking_agent",
     "search_service",
+    "llm_config",
 )
 
 
@@ -69,7 +68,6 @@ def _wire_services(session_factory):
     review_service = ReviewService(session_factory, event_store)
     search_service = SearchService(session_factory)
 
-    # Linking agent uses heuristic-based candidate matching (no LLM required)
     from app.agent import (
         CandidateGenerator,
         CandidateSearch,
@@ -80,6 +78,12 @@ def _wire_services(session_factory):
 
     async def _noop_llm(prompt: str):
         return {"candidates": []}
+
+    llm_config = LLMConfig.from_env()
+    llm_callable = _noop_llm
+    if llm_config.api_key:
+        llm_client = create_llm_client(llm_config)
+        llm_callable = llm_client.generate
 
     collector = ContextCollector(
         claim_service=claim_service,
@@ -94,7 +98,7 @@ def _wire_services(session_factory):
         context_loader=context_service.get,
         term_loader=term_service.get,
     )
-    candidate_generator = CandidateGenerator(llm_client=_noop_llm)
+    candidate_generator = CandidateGenerator(llm_client=llm_callable)
     proposal_formatter = ProposalFormatter(proposal_service=proposal_service)
     linking_agent = LinkingAgent(
         claim_service=claim_service,
@@ -117,6 +121,7 @@ def _wire_services(session_factory):
         "review_service": review_service,
         "search_service": search_service,
         "linking_agent": linking_agent,
+        "llm_config": llm_config,
     }
 
 

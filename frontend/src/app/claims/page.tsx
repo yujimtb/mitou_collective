@@ -4,6 +4,7 @@ import { ClaimCard } from "@/components/claims/ClaimCard";
 import { ClaimTable } from "@/components/claims/ClaimTable";
 import { FilterBar } from "@/components/common/FilterBar";
 import { Pagination } from "@/components/common/Pagination";
+import { CreateClaimDialog } from "@/components/CreateClaimDialog";
 import { Header } from "@/components/layout/Header";
 import { getReferenceData, listClaims } from "@/lib/api";
 import type { ClaimListFilters } from "@/lib/api";
@@ -26,7 +27,7 @@ export default async function ClaimsPage({
     field: typeof params.field === "string" ? params.field : undefined,
     trustStatus: trustStatusValue,
   };
-  const [{ contexts, fields }, claimsPage] = await Promise.all([
+  const [{ contexts, concepts, fields }, claimsPage] = await Promise.all([
     getReferenceData(),
     listClaims(filters, page, 4),
   ]);
@@ -38,6 +39,10 @@ export default async function ClaimsPage({
         title="Claim registry"
         subtitle="Filter by context, field, trust state, or text to move through the graph as evidence changes."
       />
+
+      <div className="actions-row" style={{ marginBottom: 16 }}>
+        <CreateClaimDialog concepts={concepts} contexts={contexts} />
+      </div>
 
       <FilterBar contexts={contexts} fields={fields} filters={filters} />
 

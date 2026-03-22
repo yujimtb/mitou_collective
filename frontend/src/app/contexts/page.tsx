@@ -2,11 +2,12 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
+import { CreateContextDialog } from "@/components/CreateContextDialog";
 import { Header } from "@/components/layout/Header";
-import { listContexts } from "@/lib/api";
+import { getReferenceData, listContexts } from "@/lib/api";
 
 export default async function ContextsPage() {
-  const items = await listContexts();
+  const [items, referenceData] = await Promise.all([listContexts(), getReferenceData()]);
 
   return (
     <>
@@ -14,6 +15,10 @@ export default async function ContextsPage() {
         title="Context registry"
         subtitle="Browse theory frames, assumptions, and the claim density inside each context."
       />
+
+      <div className="actions-row" style={{ marginBottom: 16 }}>
+        <CreateContextDialog contexts={referenceData.contexts} fields={referenceData.fields} />
+      </div>
 
       <section className="cards-grid">
         {items.map((item) => (

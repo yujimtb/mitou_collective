@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.agent.config import LLMConfig
 from app.auth.jwt import create_access_token
 from app.interfaces import ILinkingAgent
 from app.main import create_app
@@ -17,8 +18,6 @@ from app.schemas import (
     ProposalRead,
     ProposalStatus,
     ProposalType,
-    SearchResult,
-    SearchResultItem,
     TrustLevel,
 )
 from app.services import (
@@ -101,6 +100,7 @@ def api_services(session_factory, event_store):
         "review_service": ReviewService(session_factory, event_store),
         "search_service": SearchService(session_factory),
         "linking_agent": FakeLinkingAgent(),
+        "llm_config": LLMConfig(api_key="test-key"),
     }
 
 
