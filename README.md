@@ -115,4 +115,4 @@ This public repository intentionally excludes internal proposal drafts, agent-op
 
 ## License
 
-No open-source license file has been added yet. Reuse conditions are therefore not yet defined in this repository.
+This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
