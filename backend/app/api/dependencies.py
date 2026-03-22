@@ -8,6 +8,7 @@ from app.interfaces import (
     IClaimService,
     IConceptService,
     IContextService,
+    IEventStore,
     IEvidenceService,
     ILinkingAgent,
     IProposalService,
@@ -38,6 +39,10 @@ def get_context_service(request: Request) -> IContextService:
 
 def get_evidence_service(request: Request) -> IEvidenceService:
     return cast(IEvidenceService, _get_service(request, "evidence_service"))
+
+
+def get_event_store(request: Request) -> IEventStore:
+    return cast(IEventStore, _get_service(request, "event_store"))
 
 
 def get_term_service(request: Request) -> ITermService:

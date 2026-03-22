@@ -42,15 +42,26 @@ export default async function DashboardPage() {
         <article className="card">
           <p className="eyebrow">Recent activity</p>
           <div className="timeline" style={{ marginTop: 16 }}>
-            {dashboard.recentActivity.map((event) => (
-              <article className="timeline-item" key={event.id}>
-                <strong>{event.title}</strong>
-                <p className="supporting-text">{event.summary}</p>
-                <p className="small">
-                  {event.actorName} · {new Date(event.timestamp).toLocaleString()}
-                </p>
-              </article>
-            ))}
+            {dashboard.recentActivity.length ? (
+              dashboard.recentActivity.map((event) => (
+                <article className="timeline-item" key={event.id}>
+                  <div className="actions-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <strong>{event.title}</strong>
+                      <p className="supporting-text">{event.summary}</p>
+                    </div>
+                    <Link className="ghost-button" href={event.href}>
+                      Open
+                    </Link>
+                  </div>
+                  <p className="small">
+                    {event.actorName} · {new Date(event.timestamp).toLocaleString()}
+                  </p>
+                </article>
+              ))
+            ) : (
+              <div className="empty-state">No recent activity has been recorded yet.</div>
+            )}
           </div>
         </article>
 

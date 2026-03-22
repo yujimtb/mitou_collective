@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { useToast } from "@/components/Toast";
-import { submitReview } from "@/lib/api";
+import { submitReviewAction } from "@/lib/actions";
 import type { ProposalRead, ReviewDecision } from "@/lib/types";
 
 export function ReviewDialog({
@@ -25,7 +25,7 @@ export function ReviewDialog({
   const submit = () => {
     startTransition(async () => {
       try {
-        await submitReview({
+        await submitReviewAction({
           proposalId: proposal.id,
           decision,
           comment,

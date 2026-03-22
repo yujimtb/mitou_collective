@@ -150,6 +150,7 @@ See [Demo Dataset](docs/demo-dataset.md) for details.
 - [Architecture](docs/architecture.md) — System design and component overview
 - [Demo Dataset](docs/demo-dataset.md) — Entropy-themed seed data description
 - [Roadmap](docs/roadmap.md) — Current state and future plans
+- [Quality Audit](docs/quality-audit.md) — Current defect summary and remediation priorities
 - [Specification Index](docs/specs-index.md) — OpenSpec documents for all subsystems
 - [Parallel Development Guide](parallel_dev_guide.md) — Multi-agent parallel development setup
 - [Agent Assignments](docs/agent-assignments.md) — Agent roles, file ownership, and collision map

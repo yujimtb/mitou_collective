@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Header } from "@/components/layout/Header";
-import { getConceptDetail } from "@/lib/api";
+import { ApiError, getConceptDetail } from "@/lib/api";
 
 export default async function ConceptDetailPage({ params }: { params: Promise<{ id: string }> }) {
   try {
@@ -79,7 +79,10 @@ export default async function ConceptDetailPage({ params }: { params: Promise<{ 
         </section>
       </>
     );
-  } catch {
-    notFound();
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) {
+      notFound();
+    }
+    throw e;
   }
 }

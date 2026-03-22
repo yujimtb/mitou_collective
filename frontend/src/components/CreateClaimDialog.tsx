@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import type { ChangeEvent } from "react";
 
 import { useToast } from "@/components/Toast";
-import { createClaim } from "@/lib/api";
+import { createClaimAction } from "@/lib/actions";
 import type { ClaimType, ConceptRead, ContextRead } from "@/lib/types";
 
 function readSelectedValues(event: ChangeEvent<HTMLSelectElement>) {
@@ -50,7 +50,7 @@ export function CreateClaimDialog({
 
     startTransition(async () => {
       try {
-        await createClaim({
+        await createClaimAction({
           statement: statement.trim(),
           claim_type: claimType,
           trust_status: "tentative",

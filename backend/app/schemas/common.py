@@ -24,6 +24,7 @@ class TrustStatus(StrEnum):
     TENTATIVE = "tentative"
     DISPUTED = "disputed"
     AI_SUGGESTED = "ai_suggested"
+    RETRACTED = "retracted"
 
 
 class EvidenceType(StrEnum):

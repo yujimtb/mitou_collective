@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Header } from "@/components/layout/Header";
-import { getContextDetail } from "@/lib/api";
+import { ApiError, getContextDetail } from "@/lib/api";
 
 export default async function ContextDetailPage({ params }: { params: Promise<{ id: string }> }) {
   try {
@@ -70,7 +70,10 @@ export default async function ContextDetailPage({ params }: { params: Promise<{ 
         </section>
       </>
     );
-  } catch {
-    notFound();
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) {
+      notFound();
+    }
+    throw e;
   }
 }

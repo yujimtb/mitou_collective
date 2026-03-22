@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
+from app.errors import ConflictError
 from app.schemas import ErrorResponse
 
 
@@ -64,4 +65,11 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content=_error_body("conflict", "resource conflict", {"detail": str(exc.orig)}),
+        )
+
+    @app.exception_handler(ConflictError)
+    async def handle_conflict_error(_: Request, exc: ConflictError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content=_error_body("conflict", str(exc)),
         )

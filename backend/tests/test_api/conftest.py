@@ -91,6 +91,7 @@ def api_services(session_factory, event_store):
     actor_service = ActorService(session_factory)
     return {
         "actor_service": actor_service,
+        "event_store": event_store,
         "claim_service": ClaimService(session_factory, event_store),
         "concept_service": ConceptService(session_factory, event_store),
         "context_service": ContextService(session_factory, event_store),

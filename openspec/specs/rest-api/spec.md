@@ -14,8 +14,14 @@ CollectiveScienceのすべての機能を外部から利用可能にするREST A
 
 - **WHEN** `GET /api/v1/claims` がリクエストされる
 - **THEN** Claim一覧がJSON形式で返される
-- **THEN** クエリパラメータ `context`（Context名）、`field`（分野名）、`trust_status`（信頼状態）、`claim_type`（Claim種別）、`search`（全文検索クエリ）、`page`（ページ番号）、`per_page`（1ページあたり件数、デフォルト: 20、最大: 100）によるフィルタリングとページネーションをサポートする
+- **THEN** クエリパラメータ `context`（Context IDまたはContext名）、`field`（分野名）、`trust_status`（信頼状態）、`claim_type`（Claim種別）、`search`（全文検索クエリ）、`page`（ページ番号）、`per_page`（1ページあたり件数、デフォルト: 20、最大: 100）によるフィルタリングとページネーションをサポートする
 - **THEN** レスポンスにはtotal_count、current_page、items（Claim配列）が含まれる
+
+#### Scenario: Claim一覧のContextフィルタ（ID指定）
+
+- **WHEN** `GET /api/v1/claims?context={context_id}` がContext IDをクエリパラメータとしてリクエストされる
+- **THEN** `context` パラメータがUUID形式の場合、Context IDとして照合し、当該Contextに属するClaimのみが返される
+- **THEN** `context` パラメータがUUID形式でない場合、Context名として照合する（後方互換）
 
 #### Scenario: Claim作成
 
@@ -34,10 +40,18 @@ CollectiveScienceのすべての機能を外部から利用可能にするREST A
 - **WHEN** `PUT /api/v1/claims/{id}` がリクエストボディ（statement、claim_type等の更新フィールド）と共にリクエストされる
 - **THEN** Claimが更新され、versionがインクリメントされ、200 OKとともに更新後のClaimが返される
 
+#### Scenario: Claim撤回（論理削除）
+
+- **WHEN** `DELETE /api/v1/claims/{id}` がリクエストされる
+- **THEN** Claimのtrust_statusが `retracted` に遷移し、`ClaimRetracted` イベントがEvent Storeに記録される
+- **THEN** 200 OKとともに撤回済みClaimが返される
+- **THEN** 既に `retracted` 状態のClaimに対してリクエストされた場合、409 Conflictが返される
+
 #### Scenario: Claim変更履歴取得
 
 - **WHEN** `GET /api/v1/claims/{id}/history` がリクエストされる
-- **THEN** 当該ClaimのEvent Store内のイベント一覧が時系列順でJSON形式で返される
+- **THEN** 各イベントが以下のフィールドを持つ整形済みオブジェクトとして時系列順でJSON形式で返される: `title`（イベント種別の人間可読名）、`summary`（変更概要）、`actor_name`（実行者名）、`timestamp`（ISO 8601形式）、`event_type`（元のイベント種別）
+- **THEN** Actor名はactor_idからActorテーブルを参照して解決される
 
 ### Requirement: Concept API
 
@@ -165,6 +179,17 @@ CollectiveScienceのすべての機能を外部から利用可能にするREST A
 - **WHEN** `GET /api/v1/agent/suggestions` がリクエストされる
 - **THEN** AI Linking Agentが生成した接続候補（Proposal）一覧がJSON形式で返される
 - **THEN** クエリパラメータ `status`、`min_confidence`（最低確信度） によるフィルタリングをサポートする
+
+### Requirement: 最新アクティビティAPI
+
+システムはプラットフォーム全体の最新イベントを取得するAPIを提供しなければならない（SHALL）。
+
+#### Scenario: 最新アクティビティ取得
+
+- **WHEN** `GET /api/v1/events/recent` がリクエストされる
+- **THEN** Event Storeから直近のイベントが時系列降順でJSON形式で返される
+- **THEN** 各イベントは以下のフィールドを持つ: `id`、`kind`（イベントカテゴリ）、`title`（人間可読なタイトル）、`summary`（変更概要）、`actor_name`（実行者名）、`timestamp`（ISO 8601形式）、`href`（該当エンティティへのパス）
+- **THEN** クエリパラメータ `limit`（デフォルト: 10、最大: 50）で取得件数を制御できる
 
 ### Requirement: 検索API
 

@@ -9,7 +9,8 @@ export type TrustStatus =
   | "established"
   | "tentative"
   | "disputed"
-  | "ai_suggested";
+  | "ai_suggested"
+  | "retracted";
 
 export type EvidenceType =
   | "textbook"
@@ -86,6 +87,13 @@ export interface TermRead {
   created_by: ActorRef | null;
 }
 
+export interface TermCreateInput {
+  surface_form: string;
+  language: string;
+  field_hint?: string | null;
+  concept_ids: string[];
+}
+
 export interface ConceptRead {
   id: string;
   label: string;
@@ -123,6 +131,19 @@ export interface EvidenceRead {
   claim_links: ClaimEvidenceLink[];
   created_at: string;
   created_by: ActorRef | null;
+}
+
+export interface EvidenceRelatedClaim {
+  claim_id: string;
+  relationship: EvidenceRelationship;
+  statement: string;
+  trust_status: TrustStatus;
+}
+
+export interface EvidenceReadExtended extends EvidenceRead {
+  claim_count: number;
+  source_summary: string;
+  related_claims: EvidenceRelatedClaim[];
 }
 
 export interface ClaimCreateInput {
@@ -217,6 +238,24 @@ export interface ProposalRead {
   created_at: string;
   reviewed_at: string | null;
   reviewed_by: ActorRef | null;
+}
+
+export interface RecentActivity {
+  id: string;
+  kind: string;
+  title: string;
+  summary: string;
+  actor_name: string;
+  timestamp: string;
+  href: string;
+}
+
+export interface FormattedHistoryEvent {
+  title: string;
+  summary: string;
+  actor_name: string;
+  timestamp: string;
+  event_type: string;
 }
 
 export interface ReviewRead {

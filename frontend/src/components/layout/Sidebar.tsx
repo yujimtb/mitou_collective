@@ -7,9 +7,12 @@ const links = [
   { href: "/", title: "Dashboard", caption: "Live system pulse" },
   { href: "/claims", title: "Claims", caption: "Filter and inspect" },
   { href: "/concepts", title: "Concepts", caption: "Cross-field vocabulary" },
+  { href: "/terms", title: "Terms", caption: "Surface forms and language" },
   { href: "/contexts", title: "Contexts", caption: "Theory scaffolds" },
+  { href: "/evidence", title: "Evidence", caption: "Sources and reliability" },
   { href: "/graph", title: "Graph", caption: "Visual relations" },
   { href: "/review", title: "Review", caption: "Pending proposals" },
+  { href: "/suggestions", title: "AI Suggestions", caption: "Linking proposals queue" },
   { href: "/search", title: "Search", caption: "Traverse everything" },
 ];
 

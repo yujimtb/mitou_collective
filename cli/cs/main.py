@@ -6,14 +6,20 @@ from cs.commands.agent import app as agent_app
 from cs.commands.auth import app as auth_app
 from cs.commands.claim import app as claim_app
 from cs.commands.concept import app as concept_app
+from cs.commands.context import app as context_app
+from cs.commands.evidence import app as evidence_app
 from cs.commands.proposal import app as proposal_app
 from cs.commands.search import query as search_command
+from cs.commands.term import app as term_app
 
 
 app = typer.Typer(no_args_is_help=True, help="CollectiveScience command line interface")
 app.add_typer(auth_app, name="auth")
 app.add_typer(claim_app, name="claim")
 app.add_typer(concept_app, name="concept")
+app.add_typer(context_app, name="context")
+app.add_typer(term_app, name="term")
+app.add_typer(evidence_app, name="evidence")
 app.add_typer(proposal_app, name="proposal")
 app.add_typer(agent_app, name="agent")
 app.command("search")(search_command)

@@ -27,9 +27,23 @@ services:
       DATABASE_URL: postgresql+psycopg://collective_science:collective_science@postgres:5432/collective_science
       JWT_SECRET: change-me-in-production
       CORS_ORIGINS: http://localhost:3000
+      SEED_ON_STARTUP: "true"
     depends_on:
       postgres:
         condition: service_healthy
+    entrypoint: ["/app/entrypoint.sh"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   frontend:
     build: ./frontend
@@ -41,7 +55,8 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       CS_API_TOKEN: ""
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres-data:

@@ -23,22 +23,27 @@ class TermService(ITermService):
                 created_by_id=parse_uuid(actor_id, field_name="actor_id"),
             )
             if payload.concept_ids:
-                concepts = session.scalars(
-                    select(Concept).where(Concept.id.in_([parse_uuid(concept_id, field_name="concept_id") for concept_id in payload.concept_ids]))
-                ).all()
+                parsed_concept_ids = [parse_uuid(concept_id, field_name="concept_id") for concept_id in payload.concept_ids]
+                concepts = session.scalars(select(Concept).where(Concept.id.in_(parsed_concept_ids))).all()
+                if len(concepts) != len(payload.concept_ids):
+                    found = {str(concept.id) for concept in concepts}
+                    missing = set(payload.concept_ids) - found
+                    raise ValueError(f"Concept IDs not found: {missing}")
                 term.concepts = list(concepts)
             session.add(term)
-            session.commit()
+            session.flush()
             session.refresh(term)
             schema = self._to_schema(term)
 
-        await self._event_store.append(
-            event_type="TermCreated",
-            aggregate_type="term",
-            aggregate_id=schema.id,
-            payload=schema.model_dump(exclude={"created_at", "created_by"}),
-            actor_id=actor_id,
-        )
+            await self._event_store.append(
+                event_type="TermCreated",
+                aggregate_type="term",
+                aggregate_id=schema.id,
+                payload=schema.model_dump(exclude={"created_at", "created_by"}),
+                actor_id=actor_id,
+                session=session,
+            )
+            session.commit()
         return schema
 
     async def get(self, term_id: str) -> TermRead:
@@ -76,23 +81,28 @@ class TermService(ITermService):
             for field_name, value in changes.items():
                 setattr(term, field_name, value)
             if concept_ids is not None:
-                concepts = session.scalars(
-                    select(Concept).where(Concept.id.in_([parse_uuid(concept_id, field_name="concept_id") for concept_id in concept_ids]))
-                ).all()
+                parsed_concept_ids = [parse_uuid(concept_id, field_name="concept_id") for concept_id in concept_ids]
+                concepts = session.scalars(select(Concept).where(Concept.id.in_(parsed_concept_ids))).all()
+                if len(concepts) != len(concept_ids):
+                    found = {str(concept.id) for concept in concepts}
+                    missing = set(concept_ids) - found
+                    raise ValueError(f"Concept IDs not found: {missing}")
                 term.concepts = list(concepts)
                 changes["concept_ids"] = concept_ids
             session.add(term)
-            session.commit()
+            session.flush()
             session.refresh(term)
             schema = self._to_schema(term)
 
-        await self._event_store.append(
-            event_type="TermUpdated",
-            aggregate_type="term",
-            aggregate_id=term_id,
-            payload={"changes": changes},
-            actor_id=actor_id,
-        )
+            await self._event_store.append(
+                event_type="TermUpdated",
+                aggregate_type="term",
+                aggregate_id=term_id,
+                payload={"changes": changes},
+                actor_id=actor_id,
+                session=session,
+            )
+            session.commit()
         return schema
 
     @staticmethod

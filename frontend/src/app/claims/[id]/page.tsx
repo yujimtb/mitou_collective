@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { ClaimDetail } from "@/components/claims/ClaimDetail";
 import { Header } from "@/components/layout/Header";
-import { getClaimDetail, listClaims } from "@/lib/api";
+import { ApiError, getClaimDetail, listClaims } from "@/lib/api";
 
 export default async function ClaimDetailPage({ params }: { params: Promise<{ id: string }> }) {
   try {
@@ -20,7 +20,10 @@ export default async function ClaimDetailPage({ params }: { params: Promise<{ id
         <ClaimDetail availableClaims={claimPage.items} data={data} />
       </>
     );
-  } catch {
-    notFound();
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) {
+      notFound();
+    }
+    throw e;
   }
 }

@@ -10,7 +10,7 @@ import { CIRDisplay } from "@/components/cir/CIRDisplay";
 import { TrustBadge } from "@/components/common/TrustBadge";
 import { EvidenceCard } from "@/components/evidence/EvidenceCard";
 import { ProposalCard } from "@/components/proposals/ProposalCard";
-import { triggerAgentSuggestions } from "@/lib/api";
+import { suggestConnectionsAction } from "@/lib/actions";
 import type { ClaimDetailData } from "@/lib/api";
 import type { ClaimRead } from "@/lib/types";
 
@@ -29,7 +29,7 @@ export function ClaimDetail({
   const handleGenerateSuggestions = () => {
     startTransition(async () => {
       try {
-        await triggerAgentSuggestions("claim", claim.id, contexts[0]?.field);
+        await suggestConnectionsAction("claim", claim.id, contexts[0]?.field);
         pushToast({ kind: "success", message: "AI connection suggestions generated." });
         router.refresh();
       } catch (error) {
@@ -130,15 +130,26 @@ export function ClaimDetail({
         <div className="card">
           <p className="eyebrow">History</p>
           <div className="timeline" style={{ marginTop: 12 }}>
-            {history.map((event) => (
-              <article className="timeline-item" key={event.id}>
-                <strong>{event.title}</strong>
-                <p className="supporting-text">{event.summary}</p>
-                <p className="small">
-                  {event.actorName} · {new Date(event.timestamp).toLocaleString()}
-                </p>
-              </article>
-            ))}
+            {history.length ? (
+              history.map((event) => (
+                <article className="timeline-item" key={event.id}>
+                  <div className="actions-row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <strong>{event.title}</strong>
+                      <p className="supporting-text">{event.summary}</p>
+                    </div>
+                    <Link className="ghost-button" href={event.href}>
+                      View claim
+                    </Link>
+                  </div>
+                  <p className="small">
+                    {event.actorName} · {new Date(event.timestamp).toLocaleString()}
+                  </p>
+                </article>
+              ))
+            ) : (
+              <div className="empty-state">No history events have been recorded for this claim yet.</div>
+            )}
           </div>
         </div>
       </section>

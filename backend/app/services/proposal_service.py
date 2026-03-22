@@ -56,25 +56,27 @@ class ProposalService(IProposalService):
                 status=ProposalStatus.PENDING,
             )
             session.add(proposal)
-            session.commit()
+            session.flush()
             session.refresh(proposal)
 
             result = self._to_schema(proposal)
 
-        await self._event_store.append(
-            event_type="ProposalCreated",
-            aggregate_type="proposal",
-            aggregate_id=result.id,
-            payload={
-                "proposal_type": result.proposal_type.value,
-                "target_entity_type": result.target_entity_type,
-                "target_entity_id": result.target_entity_id,
-                "payload": result.payload,
-                "rationale": result.rationale,
-                "status": result.status.value,
-            },
-            actor_id=actor_id,
-        )
+            await self._event_store.append(
+                event_type="ProposalCreated",
+                aggregate_type="proposal",
+                aggregate_id=result.id,
+                payload={
+                    "proposal_type": result.proposal_type.value,
+                    "target_entity_type": result.target_entity_type,
+                    "target_entity_id": result.target_entity_id,
+                    "payload": result.payload,
+                    "rationale": result.rationale,
+                    "status": result.status.value,
+                },
+                actor_id=actor_id,
+                session=session,
+            )
+            session.commit()
         return result
 
     async def get(self, proposal_id: str) -> ProposalRead:

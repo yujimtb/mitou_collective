@@ -5,6 +5,7 @@ const labels: Record<TrustStatus, string> = {
   tentative: "Tentative",
   disputed: "Disputed",
   ai_suggested: "AI Suggested",
+  retracted: "Retracted",
 };
 
 export function TrustBadge({ status }: { status: TrustStatus }) {

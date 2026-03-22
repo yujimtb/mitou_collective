@@ -3,6 +3,9 @@ __all__ = [
     "auth",
     "claim",
     "concept",
+    "context",
+    "evidence",
     "proposal",
     "search",
+    "term",
 ]

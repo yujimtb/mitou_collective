@@ -26,21 +26,23 @@ class ContextService(IContextService):
                 created_by_id=parse_uuid(actor_id, field_name="actor_id"),
             )
             session.add(context)
-            session.commit()
+            session.flush()
             session.refresh(context)
             schema = self._to_schema(context)
 
-        await self._event_store.append(
-            **ContextCreated(
-                aggregate_id=schema.id,
-                actor_id=actor_id,
-                name=schema.name,
-                description=schema.description,
-                domain_field=schema.field,
-                assumptions=schema.assumptions,
-                parent_context_id=schema.parent_context_id,
-            ).to_event()
-        )
+            await self._event_store.append(
+                **ContextCreated(
+                    aggregate_id=schema.id,
+                    actor_id=actor_id,
+                    name=schema.name,
+                    description=schema.description,
+                    domain_field=schema.field,
+                    assumptions=schema.assumptions,
+                    parent_context_id=schema.parent_context_id,
+                ).to_event(),
+                session=session,
+            )
+            session.commit()
         return schema
 
     async def get(self, context_id: str) -> ContextRead:
@@ -82,13 +84,15 @@ class ContextService(IContextService):
                     continue
                 setattr(context, field_name, value)
             session.add(context)
-            session.commit()
+            session.flush()
             session.refresh(context)
             schema = self._to_schema(context)
 
-        await self._event_store.append(
-            **ContextUpdated(aggregate_id=context_id, actor_id=actor_id, changes=changes).to_event()
-        )
+            await self._event_store.append(
+                **ContextUpdated(aggregate_id=context_id, actor_id=actor_id, changes=changes).to_event(),
+                session=session,
+            )
+            session.commit()
         return schema
 
     @staticmethod

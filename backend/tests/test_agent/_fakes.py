@@ -174,6 +174,12 @@ class InMemoryClaimService(IClaimService):
     async def history(self, claim_id: str) -> list[dict[str, object]]:  # pragma: no cover - unused
         raise NotImplementedError
 
+    async def history_formatted(self, claim_id: str) -> list[dict[str, object]]:  # pragma: no cover - unused
+        raise NotImplementedError
+
+    async def retract(self, claim_id: str, actor_id: str):  # pragma: no cover - unused
+        raise NotImplementedError
+
 
 class InMemoryConceptService(IConceptService):
     def __init__(self, concepts: list[ConceptRead]):

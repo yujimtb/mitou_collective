@@ -63,10 +63,19 @@ async def update_claim(
     return await claim_service.update(claim_id, payload, actor.id)
 
 
+@router.delete("/{claim_id}", response_model=ClaimRead)
+async def retract_claim(
+    claim_id: str,
+    actor: ActorRead = Depends(require_permission(Operation.WRITE)),
+    claim_service: IClaimService = Depends(get_claim_service),
+) -> ClaimRead:
+    return await claim_service.retract(claim_id, actor.id)
+
+
 @router.get("/{claim_id}/history")
 async def get_claim_history(
     claim_id: str,
     _: ActorRead = Depends(require_permission(Operation.READ)),
     claim_service: IClaimService = Depends(get_claim_service),
 ) -> list[dict[str, object]]:
-    return await claim_service.history(claim_id)
+    return await claim_service.history_formatted(claim_id)

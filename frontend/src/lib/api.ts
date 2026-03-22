@@ -9,11 +9,15 @@ import type {
   CrossFieldConnectionRead,
   EvidenceCreateInput,
   EvidenceRead,
+  EvidenceReadExtended,
+  FormattedHistoryEvent,
   PaginatedResponse,
   ProposalRead,
   ProposalStatus,
+  RecentActivity,
   ReviewDecision,
   SearchResultItem,
+  TermCreateInput,
   TermRead,
   TrustStatus,
 } from "@/lib/types";
@@ -52,6 +56,22 @@ export interface ClaimListFilters {
 
 export interface ClaimEvidenceView extends EvidenceRead {
   relationship: string | null;
+}
+
+export interface TermListFilters {
+  search?: string;
+  language?: string;
+}
+
+export interface EvidenceListFilters {
+  search?: string;
+  evidenceType?: string;
+  reliability?: string;
+}
+
+export interface SuggestionListFilters {
+  status?: ProposalStatus | "all";
+  minConfidence?: number;
 }
 
 export interface ClaimDetailData {
@@ -140,6 +160,16 @@ export interface SearchGroup {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const V1 = `${API_BASE}/api/v1`;
 
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 function authHeaders(): Record<string, string> {
   const token = process.env.CS_API_TOKEN;
   if (token) {
@@ -170,7 +200,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
         detail = body;
       }
     }
-    throw new Error(detail || `API ${res.status}: ${url}`);
+    throw new ApiError(res.status, detail || `API ${res.status}: ${url}`);
   }
   return res.json() as Promise<T>;
 }
@@ -183,6 +213,13 @@ async function apiMutate<T>(path: string, body: unknown): Promise<T> {
   });
 }
 
+async function apiDelete<T>(path: string): Promise<T> {
+  return api<T>(path, {
+    method: "DELETE",
+    cache: "no-store",
+  });
+}
+
 function qs(params: Record<string, string | number | boolean | undefined | null>): string {
   const entries = Object.entries(params).filter(
     (pair): pair is [string, string | number | boolean] => pair[1] != null && pair[1] !== "",
@@ -191,17 +228,31 @@ function qs(params: Record<string, string | number | boolean | undefined | null>
   return "?" + new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString();
 }
 
+function summarizeSource(source: string, maxLength = 90) {
+  return source.length > maxLength ? `${source.slice(0, maxLength - 1)}...` : source;
+}
+
+async function getClaimsByIds(ids: string[]): Promise<ClaimRead[]> {
+  if (!ids.length) return [];
+  const uniqueIds = Array.from(new Set(ids));
+  const claims = await Promise.all(
+    uniqueIds.map((id) => api<ClaimRead>(`/claims/${encodeURIComponent(id)}`).catch(() => null)),
+  );
+  return claims.filter(Boolean) as ClaimRead[];
+}
+
 /* ------------------------------------------------------------------ */
 /*  Dashboard                                                          */
 /* ------------------------------------------------------------------ */
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const [claims, concepts, contexts, evidence, proposals] = await Promise.all([
+  const [claims, concepts, contexts, evidence, proposals, recentActivity] = await Promise.all([
     api<PaginatedResponse<ClaimRead>>("/claims?per_page=1"),
     api<PaginatedResponse<ConceptRead>>("/concepts?per_page=1"),
     api<PaginatedResponse<ContextRead>>("/contexts?per_page=1"),
     api<PaginatedResponse<EvidenceRead>>("/evidence?per_page=1"),
     api<PaginatedResponse<ProposalRead>>("/proposals?status=pending&per_page=1"),
+    getRecentActivity(10),
   ]);
 
   return {
@@ -212,7 +263,7 @@ export async function getDashboardData(): Promise<DashboardData> {
       evidence: evidence.total_count,
       pendingProposals: proposals.total_count,
     },
-    recentActivity: [],
+    recentActivity: recentActivity.map(toActivityItem),
   };
 }
 
@@ -250,7 +301,7 @@ export async function getClaimDetail(claimId: string): Promise<ClaimDetailData> 
       ? Promise.all(claim.evidence_ids.map((id) => api<EvidenceRead>(`/evidence/${encodeURIComponent(id)}`).catch(() => null)))
       : Promise.resolve([]),
     api<PaginatedResponse<ProposalRead>>("/proposals?status=pending&per_page=100"),
-    api<Array<Record<string, unknown>>>(`/claims/${encodeURIComponent(claimId)}/history`).catch(() => []),
+    api<FormattedHistoryEvent[]>(`/claims/${encodeURIComponent(claimId)}/history`).catch(() => []),
   ]);
 
   const concepts = conceptRes.filter(Boolean) as ConceptRead[];
@@ -266,21 +317,19 @@ export async function getClaimDetail(claimId: string): Promise<ClaimDetailData> 
     return payload.source_claim_id === claim.id || payload.target_claim_id === claim.id || p.target_entity_id === claim.id;
   });
 
-  const history: ActivityItem[] = (historyRes as Array<Record<string, string>>).map((h, i) => ({
-    id: h.id ?? `hist-${i}`,
-    kind: (h.kind ?? "claim_created") as ActivityItem["kind"],
-    title: h.title ?? "",
-    summary: h.summary ?? "",
-    actorName: h.actor_name ?? "",
-    timestamp: h.timestamp ?? h.created_at ?? "",
-    href: h.href ?? `/claims/${claimId}`,
-  }));
+  const history = historyRes.map((event, index) =>
+    toFormattedHistoryItem(event, `${claim.id}-hist-${index}`, `/claims/${claimId}`),
+  );
 
   return { claim, concepts, contexts, evidence: evidenceItems, pendingProposals, history };
 }
 
 export async function createClaim(data: ClaimCreateInput): Promise<ClaimRead> {
   return apiMutate<ClaimRead>("/claims", data);
+}
+
+export async function retractClaim(claimId: string): Promise<ClaimRead> {
+  return apiDelete<ClaimRead>(`/claims/${encodeURIComponent(claimId)}`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -363,8 +412,76 @@ export async function createContext(data: ContextCreateInput): Promise<ContextRe
   return apiMutate<ContextRead>("/contexts", data);
 }
 
+/* ------------------------------------------------------------------ */
+/*  Terms                                                              */
+/* ------------------------------------------------------------------ */
+
+export async function listTerms(filters: TermListFilters = {}): Promise<TermRead[]> {
+  const params = qs({
+    search: filters.search,
+    language: filters.language,
+    per_page: 100,
+  });
+  const res = await api<PaginatedResponse<TermRead>>(`/terms${params}`);
+  return res.items.sort((a, b) => a.surface_form.localeCompare(b.surface_form));
+}
+
+export async function getTerm(termId: string): Promise<TermRead> {
+  return api<TermRead>(`/terms/${encodeURIComponent(termId)}`);
+}
+
+export async function createTerm(data: TermCreateInput): Promise<TermRead> {
+  return apiMutate<TermRead>("/terms", data);
+}
+
 export async function createEvidence(data: EvidenceCreateInput): Promise<EvidenceRead> {
   return apiMutate<EvidenceRead>("/evidence", data);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Evidence                                                           */
+/* ------------------------------------------------------------------ */
+
+export async function listEvidence(filters: EvidenceListFilters = {}): Promise<EvidenceReadExtended[]> {
+  const params = qs({
+    search: filters.search,
+    evidence_type: filters.evidenceType,
+    reliability: filters.reliability,
+    per_page: 100,
+  });
+  const res = await api<PaginatedResponse<EvidenceRead>>(`/evidence${params}`);
+  return res.items
+    .map((item) => ({
+      ...item,
+      claim_count: item.claim_links.length,
+      source_summary: summarizeSource(item.source),
+      related_claims: [],
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+}
+
+export async function getEvidence(evidenceId: string): Promise<EvidenceReadExtended> {
+  const evidence = await api<EvidenceRead>(`/evidence/${encodeURIComponent(evidenceId)}`);
+  const claims = await getClaimsByIds(evidence.claim_links.map((link) => link.claim_id));
+  const claimMap = new Map(claims.map((claim) => [claim.id, claim]));
+
+  return {
+    ...evidence,
+    claim_count: evidence.claim_links.length,
+    source_summary: summarizeSource(evidence.source, 140),
+    related_claims: evidence.claim_links.flatMap((link) => {
+      const claim = claimMap.get(link.claim_id);
+      if (!claim) return [];
+      return [
+        {
+          claim_id: claim.id,
+          relationship: link.relationship,
+          statement: claim.statement,
+          trust_status: claim.trust_status,
+        },
+      ];
+    }),
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -408,6 +525,16 @@ export async function triggerAgentSuggestions(
     source_entity_id: entityId,
     target_field: targetField ?? null,
   });
+}
+
+export async function listSuggestions(filters: SuggestionListFilters = {}): Promise<ProposalRead[]> {
+  const params = qs({
+    status: filters.status && filters.status !== "all" ? filters.status : undefined,
+    min_confidence: filters.minConfidence,
+    per_page: 100,
+  });
+  const res = await api<PaginatedResponse<ProposalRead>>(`/agent/suggestions${params}`);
+  return res.items;
 }
 
 /* ------------------------------------------------------------------ */
@@ -542,6 +669,39 @@ export async function getReferenceData(): Promise<ReferenceData> {
     concepts: conceptRes.items.sort((a, b) => a.label.localeCompare(b.label)),
     terms: termRes.items.sort((a, b) => a.surface_form.localeCompare(b.surface_form)),
     fields: Array.from(new Set(contexts.map((c) => c.field))),
+  };
+}
+
+export async function getRecentActivity(limit = 10): Promise<RecentActivity[]> {
+  const params = qs({ limit });
+  return api<RecentActivity[]>(`/events/recent${params}`).catch(() => []);
+}
+
+export function toActivityItem(event: RecentActivity): ActivityItem {
+  return {
+    id: event.id,
+    kind: (event.kind ?? "claim_created") as ActivityItem["kind"],
+    title: event.title,
+    summary: event.summary,
+    actorName: event.actor_name,
+    timestamp: event.timestamp,
+    href: event.href,
+  };
+}
+
+export function toFormattedHistoryItem(
+  event: FormattedHistoryEvent,
+  fallbackId: string,
+  fallbackHref: string,
+): ActivityItem {
+  return {
+    id: fallbackId,
+    kind: "claim_created",
+    title: event.title,
+    summary: event.summary,
+    actorName: event.actor_name,
+    timestamp: event.timestamp,
+    href: fallbackHref,
   };
 }
 

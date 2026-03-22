@@ -31,6 +31,7 @@ from app.services import (
 
 SERVICE_STATE_KEYS = (
     "actor_service",
+    "event_store",
     "claim_service",
     "concept_service",
     "context_service",
@@ -112,6 +113,7 @@ def _wire_services(session_factory):
 
     return {
         "actor_service": actor_service,
+        "event_store": event_store,
         "claim_service": claim_service,
         "concept_service": concept_service,
         "context_service": context_service,

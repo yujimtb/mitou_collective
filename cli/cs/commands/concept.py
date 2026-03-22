@@ -95,6 +95,44 @@ def concept_connections(
     )
 
 
+@app.command("create")
+def create_concept(
+    ctx: typer.Context,
+    label: str = typer.Option(..., "--label", help="Concept label."),
+    field: str = typer.Option(..., "--field", help="Concept field."),
+    description: str = typer.Option(..., "--description", help="Concept description."),
+    terms: list[str] | None = typer.Option(
+        None,
+        "--term",
+        "--term-id",
+        help="Related term identifier. Repeat the option to add multiple values.",
+    ),
+    referent: str | None = typer.Option(
+        None, "--referent", help="Optional referent concept identifier."
+    ),
+    as_json: bool = typer.Option(False, "--json", help="Emit JSON output."),
+) -> None:
+    body = {
+        "label": label,
+        "field": field,
+        "description": description,
+        "term_ids": terms or [],
+        "referent_id": referent,
+    }
+    client = create_client_from_obj(ctx.obj)
+    try:
+        response = client.post("/api/v1/concepts", json_body=body)
+    except APIClientError as exc:
+        _exit_from_error(exc)
+    finally:
+        client.close()
+
+    if as_json:
+        print_json(response)
+        return
+    typer.echo(f"Created concept {response.get('id')}")
+
+
 def _exit_from_error(exc: APIClientError) -> None:
     typer.echo(str(exc), err=True)
     raise typer.Exit(code=1)

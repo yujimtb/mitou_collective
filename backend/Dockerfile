@@ -6,6 +6,7 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 
 COPY . .
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 

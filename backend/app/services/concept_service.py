@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.events.commands import ConceptCreated, ConceptUpdated
 from app.interfaces import IConceptService, IEventStore
-from app.models import ClaimConcept, Concept, CrossFieldConnection, Term
+from app.models import ClaimConcept, Concept, CrossFieldConnection, Referent, Term
 from app.schemas import ConceptCreate, ConceptRead, ConceptUpdate, CrossFieldConnectionRead, PaginatedResponse
 from app.services._shared import SessionFactory, actor_to_ref, paginate, parse_uuid
 
@@ -17,33 +17,45 @@ class ConceptService(IConceptService):
 
     async def create(self, payload: ConceptCreate, actor_id: str) -> ConceptRead:
         with self._session_factory() as session:
+            referent_uuid = parse_uuid(payload.referent_id, field_name="referent_id") if payload.referent_id else None
+            if referent_uuid is not None and session.get(Referent, referent_uuid) is None:
+                raise ValueError(f"Referent ID not found: {payload.referent_id}")
             concept = Concept(
                 label=payload.label,
                 description=payload.description,
                 field=payload.field,
-                referent_id=parse_uuid(payload.referent_id, field_name="referent_id") if payload.referent_id else None,
+                referent_id=referent_uuid,
                 created_by_id=parse_uuid(actor_id, field_name="actor_id"),
             )
             if payload.term_ids:
-                concept.terms = list(
-                    session.scalars(select(Term).where(Term.id.in_([parse_uuid(term_id, field_name="term_id") for term_id in payload.term_ids]))).all()
+                parsed_term_ids = [parse_uuid(term_id, field_name="term_id") for term_id in payload.term_ids]
+                terms = list(
+                    session.scalars(select(Term).where(Term.id.in_(parsed_term_ids))).all()
                 )
+                if len(terms) != len(payload.term_ids):
+                    found = {str(t.id) for t in terms}
+                    missing = set(payload.term_ids) - found
+                    raise ValueError(f"Term IDs not found: {missing}")
+                concept.terms = terms
             session.add(concept)
-            session.commit()
+            session.flush()
             session.refresh(concept)
             schema = self._to_schema(concept)
 
-        await self._event_store.append(
-            **ConceptCreated(
-                aggregate_id=schema.id,
-                actor_id=actor_id,
-                label=schema.label,
-                description=schema.description,
-                domain_field=schema.field,
-                term_ids=schema.term_ids,
-                referent_id=schema.referent_id,
-            ).to_event()
-        )
+            await self._event_store.append(
+                **ConceptCreated(
+                    aggregate_id=schema.id,
+                    actor_id=actor_id,
+                    label=schema.label,
+                    description=schema.description,
+                    domain_field=schema.field,
+                    term_ids=schema.term_ids,
+                    referent_id=schema.referent_id,
+                ).to_event(),
+                session=session,
+            )
+            session.commit()
+
         return schema
 
     async def get(self, concept_id: str) -> ConceptRead:
@@ -83,21 +95,30 @@ class ConceptService(IConceptService):
             for field_name, value in changes.items():
                 setattr(concept, field_name, value)
             if term_ids is not None:
-                concept.terms = list(
-                    session.scalars(select(Term).where(Term.id.in_([parse_uuid(term_id, field_name="term_id") for term_id in term_ids]))).all()
-                )
+                parsed_term_ids = [parse_uuid(term_id, field_name="term_id") for term_id in term_ids]
+                terms = list(session.scalars(select(Term).where(Term.id.in_(parsed_term_ids))).all())
+                if len(terms) != len(term_ids):
+                    found = {str(term.id) for term in terms}
+                    missing = set(term_ids) - found
+                    raise ValueError(f"Term IDs not found: {missing}")
+                concept.terms = terms
                 changes["term_ids"] = term_ids
             if "referent_id" in payload.model_fields_set:
-                concept.referent_id = parse_uuid(referent_id, field_name="referent_id") if referent_id else None
+                parsed_referent_id = parse_uuid(referent_id, field_name="referent_id") if referent_id else None
+                if parsed_referent_id is not None and session.get(Referent, parsed_referent_id) is None:
+                    raise ValueError(f"Referent ID not found: {referent_id}")
+                concept.referent_id = parsed_referent_id
                 changes["referent_id"] = referent_id
             session.add(concept)
-            session.commit()
+            session.flush()
             session.refresh(concept)
             schema = self._to_schema(concept)
 
-        await self._event_store.append(
-            **ConceptUpdated(aggregate_id=concept_id, actor_id=actor_id, changes=changes).to_event()
-        )
+            await self._event_store.append(
+                **ConceptUpdated(aggregate_id=concept_id, actor_id=actor_id, changes=changes).to_event(),
+                session=session,
+            )
+            session.commit()
         return schema
 
     async def connections(self, concept_id: str) -> list[CrossFieldConnectionRead]:

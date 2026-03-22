@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import uuid
+
+import pytest
 
 from app.schemas import (
     CIRCreate,
@@ -122,3 +125,51 @@ def test_evidence_cir_and_connection_services(session_factory, event_store) -> N
     assert evidence.claim_links[0].claim_id == first_claim.id
     assert cir.claim_id == first_claim.id
     assert connection.source_claim_id == first_claim.id
+
+
+def test_concept_service_rejects_missing_term_or_referent_ids(session_factory, event_store) -> None:
+    actor_id = "11111111-1111-1111-1111-111111111111"
+    concept_service = ConceptService(session_factory, event_store)
+
+    with pytest.raises(ValueError, match="Term IDs not found"):
+        asyncio.run(
+            concept_service.create(
+                ConceptCreate(
+                    label="Entropy",
+                    description="desc",
+                    field="physics",
+                    term_ids=[str(uuid.uuid4())],
+                ),
+                actor_id,
+            )
+        )
+
+    with pytest.raises(ValueError, match="Referent ID not found"):
+        asyncio.run(
+            concept_service.create(
+                ConceptCreate(
+                    label="Entropy",
+                    description="desc",
+                    field="physics",
+                    referent_id=str(uuid.uuid4()),
+                ),
+                actor_id,
+            )
+        )
+
+
+def test_term_service_rejects_missing_concept_ids(session_factory, event_store) -> None:
+    actor_id = "11111111-1111-1111-1111-111111111111"
+    term_service = TermService(session_factory, event_store)
+
+    with pytest.raises(ValueError, match="Concept IDs not found"):
+        asyncio.run(
+            term_service.create(
+                TermCreate(
+                    surface_form="entropy",
+                    language="en",
+                    concept_ids=[str(uuid.uuid4())],
+                ),
+                actor_id,
+            )
+        )

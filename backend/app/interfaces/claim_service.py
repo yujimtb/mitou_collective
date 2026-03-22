@@ -25,3 +25,11 @@ class IClaimService(ABC):
     @abstractmethod
     async def history(self, claim_id: str) -> list[dict[str, object]]:
         raise NotImplementedError
+
+    @abstractmethod
+    async def history_formatted(self, claim_id: str) -> list[dict[str, object]]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def retract(self, claim_id: str, actor_id: str) -> ClaimRead:
+        raise NotImplementedError
