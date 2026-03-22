@@ -1,0 +1,89 @@
+{
+  "base_claims": [
+    {"slug": "second_law_non_decreasing", "statement": "Isolated systems exhibit non-decreasing entropy over time.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["classical_thermodynamics"], "concept_refs": ["thermodynamic_entropy", "second_law"]},
+    {"slug": "entropy_state_function", "statement": "Thermodynamic entropy is a state function.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["classical_thermodynamics"], "concept_refs": ["thermodynamic_entropy"]},
+    {"slug": "reversible_entropy_change_zero", "statement": "Reversible cyclic processes produce zero net entropy change for the closed path.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["classical_thermodynamics"], "concept_refs": ["thermodynamic_entropy"]},
+    {"slug": "irreversible_entropy_increase", "statement": "Irreversible processes increase entropy in the isolated-system idealization.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["classical_thermodynamics"], "concept_refs": ["thermodynamic_entropy", "second_law"]},
+    {"slug": "entropy_dimension_energy_temperature", "statement": "Thermodynamic entropy has units of energy divided by temperature.", "claim_type": "definition", "trust_status": "established", "context_refs": ["classical_thermodynamics"], "concept_refs": ["thermodynamic_entropy"]},
+    {"slug": "clausius_inequality", "statement": "The Clausius inequality is expressed as integral delta Q over T less than or equal to zero for a cycle.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["classical_thermodynamics"], "concept_refs": ["thermodynamic_entropy", "second_law"]},
+
+    {"slug": "boltzmann_relation", "statement": "Boltzmann entropy is given by S equals k_B times the logarithm of W.", "claim_type": "definition", "trust_status": "established", "context_refs": ["statistical_mechanics"], "concept_refs": ["boltzmann_entropy"]},
+    {"slug": "macro_entropy_log_microstates", "statement": "Macroscopic entropy is proportional to the logarithm of the number of compatible microstates.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["statistical_mechanics"], "concept_refs": ["boltzmann_entropy"]},
+    {"slug": "gibbs_entropy_definition", "statement": "Gibbs entropy is given by minus k_B times the sum over p_i log p_i.", "claim_type": "definition", "trust_status": "established", "context_refs": ["statistical_mechanics"], "concept_refs": ["gibbs_entropy"]},
+    {"slug": "equal_a_priori_probability", "statement": "In isolated equilibrium models, accessible microstates are treated as equally probable.", "claim_type": "conjecture", "trust_status": "tentative", "context_refs": ["statistical_mechanics"], "concept_refs": ["boltzmann_entropy", "gibbs_entropy"]},
+
+    {"slug": "shannon_entropy_definition", "statement": "Shannon entropy is H of X equals minus the sum of p of x times log p of x.", "claim_type": "definition", "trust_status": "established", "context_refs": ["shannon_information_theory"], "concept_refs": ["shannon_entropy"]},
+    {"slug": "entropy_as_missing_information", "statement": "Shannon entropy can be interpreted as a measure of missing information about a source.", "claim_type": "meta", "trust_status": "tentative", "context_refs": ["shannon_information_theory"], "concept_refs": ["shannon_entropy"]},
+    {"slug": "khinchin_uniqueness", "statement": "Shannon entropy is uniquely characterized by standard composition and continuity axioms up to scale.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["shannon_information_theory"], "concept_refs": ["shannon_entropy"]},
+    {"slug": "mutual_information_definition", "statement": "Mutual information is I of X and Y equals H of X minus H of X given Y.", "claim_type": "definition", "trust_status": "established", "context_refs": ["shannon_information_theory"], "concept_refs": ["shannon_entropy"]},
+
+    {"slug": "von_neumann_definition", "statement": "Von Neumann entropy is minus the trace of rho times the logarithm of rho.", "claim_type": "definition", "trust_status": "established", "context_refs": ["quantum_information_theory"], "concept_refs": ["von_neumann_entropy"]},
+    {"slug": "quantum_entropy_eigenvalues", "statement": "Von Neumann entropy is the Shannon entropy of the eigenvalue spectrum of a density matrix.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["quantum_information_theory"], "concept_refs": ["von_neumann_entropy", "shannon_entropy"]},
+    {"slug": "entanglement_entropy_pure_bipartite", "statement": "For pure bipartite states, reduced-state entropy quantifies entanglement.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["quantum_information_theory"], "concept_refs": ["von_neumann_entropy"]},
+
+    {"slug": "kolmogorov_shortest_description", "statement": "Kolmogorov complexity is the length of the shortest program producing a given string.", "claim_type": "definition", "trust_status": "established", "context_refs": ["algorithmic_information_theory"], "concept_refs": ["kolmogorov_complexity"]},
+    {"slug": "incompressible_strings_common", "statement": "Most sufficiently long binary strings are incompressible up to an additive constant.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["algorithmic_information_theory"], "concept_refs": ["kolmogorov_complexity"]},
+    {"slug": "algorithmic_randomness_description_length", "statement": "Algorithmic randomness is characterized by high Kolmogorov complexity relative to length.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["algorithmic_information_theory"], "concept_refs": ["kolmogorov_complexity"]},
+
+    {"slug": "boltzmann_shannon_correspondence", "statement": "Boltzmann entropy approaches Shannon-style entropy under distributional counting limits.", "claim_type": "conjecture", "trust_status": "ai_suggested", "context_refs": ["cross_field_entropy", "statistical_mechanics", "shannon_information_theory"], "concept_refs": ["boltzmann_entropy", "shannon_entropy"]},
+    {"slug": "jaynes_maxent_unification", "statement": "The maximum entropy principle proposed by Jaynes unifies inference in statistical mechanics and information theory.", "claim_type": "theorem", "trust_status": "tentative", "context_refs": ["cross_field_entropy", "statistical_mechanics", "shannon_information_theory"], "concept_refs": ["gibbs_entropy", "shannon_entropy"]},
+    {"slug": "von_neumann_generalizes_shannon", "statement": "Von Neumann entropy generalizes Shannon entropy to quantum states.", "claim_type": "theorem", "trust_status": "established", "context_refs": ["cross_field_entropy", "quantum_information_theory", "shannon_information_theory"], "concept_refs": ["von_neumann_entropy", "shannon_entropy"]},
+    {"slug": "kolmogorov_shannon_complementary", "statement": "Kolmogorov complexity complements Shannon entropy by emphasizing individual objects instead of source ensembles.", "claim_type": "meta", "trust_status": "tentative", "context_refs": ["cross_field_entropy", "algorithmic_information_theory", "shannon_information_theory"], "concept_refs": ["kolmogorov_complexity", "shannon_entropy"]}
+  ],
+  "generated_claim_groups": [
+    {
+      "slug_prefix": "ct_aux",
+      "context_refs": ["classical_thermodynamics"],
+      "concept_refs": ["thermodynamic_entropy", "second_law"],
+      "claim_type": "theorem",
+      "trust_status": "established",
+      "template": "In classical thermodynamics, entropy accounting remains consistent with {topic}.",
+      "topics": ["heat engines", "refrigeration cycles", "adiabatic accessibility", "control-volume balances", "equilibrium constraints", "state-variable tables", "quasi-static idealizations", "process irreversibility", "reservoir coupling", "free expansion", "mixing phenomena", "phase-transition bookkeeping", "available work bounds", "Carnot limits", "equation-of-state reasoning", "closed-system balances"]
+    },
+    {
+      "slug_prefix": "sm_aux",
+      "context_refs": ["statistical_mechanics"],
+      "concept_refs": ["boltzmann_entropy", "gibbs_entropy"],
+      "claim_type": "theorem",
+      "trust_status": "established",
+      "template": "In statistical mechanics, entropy formulations remain informative for {topic}.",
+      "topics": ["microcanonical ensembles", "canonical ensembles", "coarse graining", "state counting", "large-deviation arguments", "partition functions", "phase-space volumes", "ensemble equivalence", "ergodic assumptions", "macroscopic fluctuations", "equilibrium constraints", "typicality arguments", "Boltzmann counting", "probability simplex models", "gas models", "spin systems"]
+    },
+    {
+      "slug_prefix": "si_aux",
+      "context_refs": ["shannon_information_theory"],
+      "concept_refs": ["shannon_entropy"],
+      "claim_type": "theorem",
+      "trust_status": "established",
+      "template": "In Shannon information theory, entropy remains a core tool for {topic}.",
+      "topics": ["source coding", "prefix-free representations", "channel capacity analysis", "binary symmetric channels", "noise models", "message uncertainty", "compression lower bounds", "coding redundancy", "decision-tree depth", "predictive distributions", "conditional uncertainty", "surprise averages", "communication efficiency", "symbol distributions", "finite alphabets", "data transmission limits"]
+    },
+    {
+      "slug_prefix": "qi_aux",
+      "context_refs": ["quantum_information_theory"],
+      "concept_refs": ["von_neumann_entropy"],
+      "claim_type": "theorem",
+      "trust_status": "established",
+      "template": "In quantum information theory, entropy arguments guide {topic}.",
+      "topics": ["density operator spectra", "mixed-state uncertainty", "entanglement witnesses", "quantum channels", "partial traces", "Schmidt decompositions", "quantum coding theorems", "decoherence models", "purification arguments", "subsystem entropy", "state tomography summaries", "operator convexity", "quantum thermodynamic analogies", "resource theories", "bipartite systems", "qubit ensembles"]
+    },
+    {
+      "slug_prefix": "ai_aux",
+      "context_refs": ["algorithmic_information_theory"],
+      "concept_refs": ["kolmogorov_complexity"],
+      "claim_type": "theorem",
+      "trust_status": "established",
+      "template": "In algorithmic information theory, description-length reasoning remains central for {topic}.",
+      "topics": ["prefix machines", "program-size bounds", "incompressible strings", "Martin-Lof tests", "finite strings", "effective descriptions", "minimal encodings", "complexity invariance", "algorithmic statistics", "randomness deficiency", "universal priors", "compression impossibility", "self-delimiting codes", "binary expansions", "constructive dimension", "proof-length comparisons"]
+    },
+    {
+      "slug_prefix": "xf_aux",
+      "context_refs": ["cross_field_entropy"],
+      "concept_refs": ["boltzmann_entropy", "gibbs_entropy", "shannon_entropy", "von_neumann_entropy", "kolmogorov_complexity"],
+      "claim_type": "meta",
+      "trust_status": "tentative",
+      "template": "Across entropy traditions, a useful comparative lens is {topic}.",
+      "topics": ["coarse-graining choices", "observer knowledge", "ensemble versus instance viewpoints", "state multiplicity", "coding interpretations", "quantum generalization", "maximum entropy inference", "irreversibility metaphors", "resource-theoretic translations", "thermodynamic bookkeeping", "compression analogies", "description-length dualities", "information loss models", "equilibrium notions", "sampling assumptions", "formal analogy limits"]
+    }
+  ]
+}

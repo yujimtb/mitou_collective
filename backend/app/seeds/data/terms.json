@@ -1,0 +1,65 @@
+[
+  {
+    "key": "entropy_en",
+    "surface_form": "entropy",
+    "language": "en",
+    "field_hint": "cross_field",
+    "concept_refs": ["thermodynamic_entropy", "boltzmann_entropy", "gibbs_entropy", "shannon_entropy", "von_neumann_entropy", "kolmogorov_complexity"]
+  },
+  {
+    "key": "entropy_ja",
+    "surface_form": "エントロピー",
+    "language": "ja",
+    "field_hint": "cross_field",
+    "concept_refs": ["thermodynamic_entropy", "boltzmann_entropy", "gibbs_entropy", "shannon_entropy", "von_neumann_entropy", "kolmogorov_complexity"]
+  },
+  {
+    "key": "disorder_en",
+    "surface_form": "disorder",
+    "language": "en",
+    "field_hint": "thermodynamics",
+    "concept_refs": ["thermodynamic_entropy", "boltzmann_entropy"]
+  },
+  {
+    "key": "information_en",
+    "surface_form": "information",
+    "language": "en",
+    "field_hint": "information_theory",
+    "concept_refs": ["shannon_entropy", "von_neumann_entropy", "kolmogorov_complexity"]
+  },
+  {
+    "key": "uncertainty_en",
+    "surface_form": "uncertainty",
+    "language": "en",
+    "field_hint": "information_theory",
+    "concept_refs": ["shannon_entropy"]
+  },
+  {
+    "key": "second_law_ja",
+    "surface_form": "第二法則",
+    "language": "ja",
+    "field_hint": "thermodynamics",
+    "concept_refs": ["second_law"]
+  },
+  {
+    "key": "complexity_en",
+    "surface_form": "complexity",
+    "language": "en",
+    "field_hint": "computer_science",
+    "concept_refs": ["kolmogorov_complexity"]
+  },
+  {
+    "key": "microstate_en",
+    "surface_form": "microstate",
+    "language": "en",
+    "field_hint": "statistical_mechanics",
+    "concept_refs": ["boltzmann_entropy", "gibbs_entropy"]
+  },
+  {
+    "key": "density_matrix_en",
+    "surface_form": "density matrix",
+    "language": "en",
+    "field_hint": "quantum_information",
+    "concept_refs": ["von_neumann_entropy"]
+  }
+]

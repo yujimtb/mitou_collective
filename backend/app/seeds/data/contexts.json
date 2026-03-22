@@ -1,0 +1,44 @@
+[
+  {
+    "key": "classical_thermodynamics",
+    "name": "Classical Thermodynamics",
+    "field": "thermodynamics",
+    "description": "Phenomenological thermodynamics for macroscopic heat and work without microscopic assumptions.",
+    "assumptions": ["macroscopic_system", "equilibrium_states", "no_microscopic_detail"]
+  },
+  {
+    "key": "statistical_mechanics",
+    "name": "Statistical Mechanics",
+    "field": "statistical_mechanics",
+    "description": "Macroscopic quantities derived from probability distributions over microscopic states.",
+    "assumptions": ["large_number_of_particles", "ergodic_hypothesis", "probability_distributions"]
+  },
+  {
+    "key": "shannon_information_theory",
+    "name": "Shannon Information Theory",
+    "field": "information_theory",
+    "description": "Quantification of uncertainty and coding efficiency for discrete communication systems.",
+    "assumptions": ["discrete_probability_distribution", "communication_channel", "encoding_decoding"]
+  },
+  {
+    "key": "quantum_information_theory",
+    "name": "Quantum Information Theory",
+    "field": "quantum_information",
+    "description": "Information measures for quantum states using density matrices and operator methods.",
+    "assumptions": ["quantum_mechanics", "density_matrix", "hilbert_space"]
+  },
+  {
+    "key": "algorithmic_information_theory",
+    "name": "Algorithmic Information Theory",
+    "field": "computer_science",
+    "description": "Information measured through shortest descriptions and Kolmogorov complexity.",
+    "assumptions": ["turing_machine", "algorithmic_complexity", "incompressibility"]
+  },
+  {
+    "key": "cross_field_entropy",
+    "name": "Cross-field Entropy Studies",
+    "field": "cross_field",
+    "description": "Bridge context for comparing entropy concepts across thermodynamics, physics, and information theory.",
+    "assumptions": ["analogy_mapping", "concept_translation", "shared_formal_patterns"]
+  }
+]

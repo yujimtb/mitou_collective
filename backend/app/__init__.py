@@ -1,0 +1,1 @@
+"""CollectiveScience backend application package."""

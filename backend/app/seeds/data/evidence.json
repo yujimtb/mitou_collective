@@ -1,0 +1,128 @@
+{
+  "base_evidence": [
+    {
+      "slug": "callen_textbook",
+      "title": "Thermodynamics and an Introduction to Thermostatistics",
+      "evidence_type": "textbook",
+      "source": "Callen, H.B. (1985) Wiley",
+      "excerpt": "Standard exposition of entropy as a state function and the second law.",
+      "reliability": "high",
+      "claim_refs": ["second_law_non_decreasing", "entropy_state_function"]
+    },
+    {
+      "slug": "pathria_textbook",
+      "title": "Statistical Mechanics",
+      "evidence_type": "textbook",
+      "source": "Pathria, R.K. and Beale, P.D. (2011) Academic Press",
+      "excerpt": "Canonical reference for Boltzmann and Gibbs entropy formulations.",
+      "reliability": "high",
+      "claim_refs": ["boltzmann_relation", "gibbs_entropy_definition"]
+    },
+    {
+      "slug": "nielsen_chuang",
+      "title": "Quantum Computation and Quantum Information",
+      "evidence_type": "textbook",
+      "source": "Nielsen, M.A. and Chuang, I.L. (2000) Cambridge University Press",
+      "excerpt": "Introduces von Neumann entropy and entanglement entropy.",
+      "reliability": "high",
+      "claim_refs": ["von_neumann_definition", "entanglement_entropy_pure_bipartite"]
+    },
+    {
+      "slug": "shannon_1948",
+      "title": "A Mathematical Theory of Communication",
+      "evidence_type": "paper",
+      "source": "Shannon, C.E. (1948) Bell System Technical Journal",
+      "excerpt": "Foundational article defining Shannon entropy.",
+      "reliability": "high",
+      "claim_refs": ["shannon_entropy_definition", "mutual_information_definition"]
+    },
+    {
+      "slug": "jaynes_1957",
+      "title": "Information Theory and Statistical Mechanics",
+      "evidence_type": "paper",
+      "source": "Jaynes, E.T. (1957) Physical Review",
+      "excerpt": "Connects entropy maximization with statistical mechanics.",
+      "reliability": "high",
+      "claim_refs": ["jaynes_maxent_unification", "macro_entropy_log_microstates"]
+    },
+    {
+      "slug": "boltzmann_1877",
+      "title": "Uber die Beziehung zwischen dem zweiten Hauptsatze der mechanischen Warmetheorie und der Wahrscheinlichkeitsrechnung",
+      "evidence_type": "paper",
+      "source": "Boltzmann, L. (1877)",
+      "excerpt": "Original source behind the logarithmic microstate formula.",
+      "reliability": "high",
+      "claim_refs": ["boltzmann_relation", "macro_entropy_log_microstates"]
+    },
+    {
+      "slug": "cover_thomas",
+      "title": "Elements of Information Theory",
+      "evidence_type": "textbook",
+      "source": "Cover, T. and Thomas, J. (2006) Wiley",
+      "excerpt": "Canonical treatment of entropy, mutual information, and coding theorems.",
+      "reliability": "high",
+      "claim_refs": ["shannon_entropy_definition", "khinchin_uniqueness", "mutual_information_definition"]
+    },
+    {
+      "slug": "li_vitanyi",
+      "title": "An Introduction to Kolmogorov Complexity and Its Applications",
+      "evidence_type": "textbook",
+      "source": "Li, M. and Vitanyi, P. (2008) Springer",
+      "excerpt": "Reference on shortest descriptions and incompressibility.",
+      "reliability": "high",
+      "claim_refs": ["kolmogorov_shortest_description", "incompressible_strings_common", "algorithmic_randomness_description_length"]
+    }
+  ],
+  "generated_series": [
+    {
+      "slug_prefix": "thermo_series",
+      "evidence_type": "textbook",
+      "reliability": "medium",
+      "title_template": "Thermodynamics entropy note {index}",
+      "source_template": "Seeded Thermodynamics Notes Volume {index}",
+      "excerpt_template": "Study note {index} summarizing entropy reasoning for {topic}.",
+      "claim_ref_prefix": "ct_aux",
+      "topics": ["heat engines", "refrigeration cycles", "adiabatic accessibility", "control-volume balances", "equilibrium constraints"]
+    },
+    {
+      "slug_prefix": "statmech_series",
+      "evidence_type": "paper",
+      "reliability": "medium",
+      "title_template": "Statistical mechanics entropy note {index}",
+      "source_template": "Seeded Statistical Mechanics Notes Volume {index}",
+      "excerpt_template": "Brief seeded paper-style note {index} on entropy and {topic}.",
+      "claim_ref_prefix": "sm_aux",
+      "topics": ["microcanonical ensembles", "canonical ensembles", "coarse graining", "state counting", "large-deviation arguments"]
+    },
+    {
+      "slug_prefix": "shannon_series",
+      "evidence_type": "textbook",
+      "reliability": "medium",
+      "title_template": "Information theory entropy note {index}",
+      "source_template": "Seeded Information Theory Notes Volume {index}",
+      "excerpt_template": "Reference note {index} linking entropy to {topic}.",
+      "claim_ref_prefix": "si_aux",
+      "topics": ["source coding", "channel capacity analysis", "noise models", "compression lower bounds", "conditional uncertainty"]
+    },
+    {
+      "slug_prefix": "quantum_series",
+      "evidence_type": "paper",
+      "reliability": "medium",
+      "title_template": "Quantum information entropy note {index}",
+      "source_template": "Seeded Quantum Information Notes Volume {index}",
+      "excerpt_template": "Seeded note {index} on quantum entropy and {topic}.",
+      "claim_ref_prefix": "qi_aux",
+      "topics": ["density operator spectra", "entanglement witnesses", "quantum channels", "partial traces", "subsystem entropy"]
+    },
+    {
+      "slug_prefix": "algorithmic_series",
+      "evidence_type": "textbook",
+      "reliability": "medium",
+      "title_template": "Algorithmic information note {index}",
+      "source_template": "Seeded Algorithmic Information Notes Volume {index}",
+      "excerpt_template": "Generated note {index} on description length and {topic}.",
+      "claim_ref_prefix": "ai_aux",
+      "topics": ["prefix machines", "program-size bounds", "incompressible strings", "complexity invariance", "universal priors"]
+    }
+  ]
+}

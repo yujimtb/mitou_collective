@@ -1,0 +1,33 @@
+[project]
+name = "collective-science-cli"
+version = "0.1.0"
+description = "CLI for the CollectiveScience REST API"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.28.0,<1.0.0",
+  "rich>=13.9.0,<14.0.0",
+  "typer>=0.16.0,<1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3.0,<9.0.0",
+]
+
+[project.scripts]
+cs = "cs.main:app"
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cs*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -1,0 +1,79 @@
+[
+  {
+    "key": "thermodynamic_entropy",
+    "label": "Thermodynamic Entropy (S)",
+    "description": "State-function entropy used in classical thermodynamics to quantify reversible heat transfer over temperature.",
+    "field": "thermodynamics",
+    "referent": {
+      "key": "entropy_measure",
+      "label": "Entropy Measure",
+      "description": "A quantitative measure of missing constraints, multiplicity, or uncertainty."
+    }
+  },
+  {
+    "key": "boltzmann_entropy",
+    "label": "Boltzmann Entropy (S = k_B ln W)",
+    "description": "Entropy proportional to the logarithm of the number of compatible microstates.",
+    "field": "statistical_mechanics",
+    "referent": {
+      "key": "microstate_count",
+      "label": "Microstate Count",
+      "description": "The count of microstates compatible with a macroscopic description."
+    }
+  },
+  {
+    "key": "gibbs_entropy",
+    "label": "Gibbs Entropy",
+    "description": "Entropy of a probability distribution over states given by a weighted logarithmic average.",
+    "field": "statistical_mechanics",
+    "referent": {
+      "key": "distributional_entropy",
+      "label": "Distributional Entropy",
+      "description": "Entropy defined from a probability distribution over a state space."
+    }
+  },
+  {
+    "key": "shannon_entropy",
+    "label": "Shannon Entropy (H = -Σ p log p)",
+    "description": "Average surprise for a discrete random variable under an encoding model.",
+    "field": "information_theory",
+    "referent": {
+      "key": "uncertainty_measure",
+      "label": "Uncertainty Measure",
+      "description": "A quantity that summarizes uncertainty in a random variable or message source."
+    }
+  },
+  {
+    "key": "von_neumann_entropy",
+    "label": "Von Neumann Entropy (S = -Tr(ρ ln ρ))",
+    "description": "Quantum generalization of entropy computed from the eigenvalues of a density operator.",
+    "field": "quantum_information",
+    "referent": {
+      "key": "quantum_state_entropy",
+      "label": "Quantum State Entropy",
+      "description": "An entropy measure assigned to a quantum state represented by a density matrix."
+    }
+  },
+  {
+    "key": "kolmogorov_complexity",
+    "label": "Kolmogorov Complexity",
+    "description": "Length of the shortest effective description of a string relative to a universal machine.",
+    "field": "computer_science",
+    "referent": {
+      "key": "description_length",
+      "label": "Description Length",
+      "description": "The shortest code or program length sufficient to specify an object."
+    }
+  },
+  {
+    "key": "second_law",
+    "label": "Second Law of Thermodynamics",
+    "description": "Principle constraining entropy change and irreversibility in isolated systems.",
+    "field": "thermodynamics",
+    "referent": {
+      "key": "irreversibility_principle",
+      "label": "Irreversibility Principle",
+      "description": "The directional rule governing entropy increase and spontaneous processes."
+    }
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "key": "boltzmann_shannon_connection",
+    "source_claim_ref": "boltzmann_relation",
+    "target_claim_ref": "shannon_entropy_definition",
+    "connection_type": "analogous",
+    "description": "Both claims define entropy as a logarithmic summary over possibilities.",
+    "confidence": 0.85,
+    "status": "approved"
+  },
+  {
+    "key": "gibbs_shannon_connection",
+    "source_claim_ref": "gibbs_entropy_definition",
+    "target_claim_ref": "shannon_entropy_definition",
+    "connection_type": "equivalent",
+    "description": "Gibbs entropy and Shannon entropy coincide up to the Boltzmann constant and context of interpretation.",
+    "confidence": 0.92,
+    "status": "approved"
+  },
+  {
+    "key": "von_neumann_shannon_connection",
+    "source_claim_ref": "von_neumann_definition",
+    "target_claim_ref": "shannon_entropy_definition",
+    "connection_type": "generalizes",
+    "description": "Von Neumann entropy extends Shannon-style uncertainty to quantum density operators.",
+    "confidence": 0.88,
+    "status": "approved"
+  },
+  {
+    "key": "kolmogorov_shannon_connection",
+    "source_claim_ref": "kolmogorov_shortest_description",
+    "target_claim_ref": "shannon_entropy_definition",
+    "connection_type": "complements",
+    "description": "Kolmogorov complexity complements source entropy by focusing on individual descriptions rather than ensembles.",
+    "confidence": 0.65,
+    "status": "pending"
+  }
+]

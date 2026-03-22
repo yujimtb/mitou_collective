@@ -1,0 +1,43 @@
+[
+  {
+    "key": "second_law_cir",
+    "claim_ref": "second_law_non_decreasing",
+    "context_ref": "Thermodynamics_Classical",
+    "subject": "entropy(system)",
+    "relation": "non_decreasing_over_time",
+    "object": null,
+    "conditions": [
+      {"predicate": "isolated", "argument": "system", "negated": false},
+      {"predicate": "macroscopic", "argument": "system", "negated": false}
+    ],
+    "units": "J/K",
+    "definition_refs": ["second_law", "thermodynamic_entropy"]
+  },
+  {
+    "key": "boltzmann_cir",
+    "claim_ref": "boltzmann_relation",
+    "context_ref": "Statistical_Mechanics",
+    "subject": "S",
+    "relation": "equals",
+    "object": "k_B * ln(W)",
+    "conditions": [
+      {"predicate": "microcanonical_ensemble", "argument": "system", "negated": false}
+    ],
+    "units": "J/K",
+    "definition_refs": ["boltzmann_entropy"]
+  },
+  {
+    "key": "shannon_cir",
+    "claim_ref": "shannon_entropy_definition",
+    "context_ref": "Shannon_Information_Theory",
+    "subject": "H(X)",
+    "relation": "equals",
+    "object": "-sum(p(x) * log(p(x)))",
+    "conditions": [
+      {"predicate": "discrete_distribution", "argument": "X", "negated": false},
+      {"predicate": "finite_support", "argument": "X", "negated": false}
+    ],
+    "units": "bits",
+    "definition_refs": ["shannon_entropy"]
+  }
+]
