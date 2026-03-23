@@ -1,150 +1,117 @@
+# 品質監査
+
+> **🇯🇵 日本語** | [English](#quality-audit)
+
+## 対象範囲
+
+本ドキュメントは、最新の修正パス後のリポジトリ全体の品質監査の現在の状態を記録したものです。既に修正済みの不具合の過去のリストではなく、プロトタイプの現在の検証済みステータスを反映しています。
+
+監査スナップショット：
+
+- バックエンド: `python -m ruff check .` および `python -m pytest tests` → 102テスト合格
+- CLI: `python -m pytest` → 16テスト合格
+- フロントエンド: `npm run lint`、`npm run typecheck`、`npm run test -- --run`、`npm run build` 合格
+
+## 現在の状態
+
+以前報告されたフロントエンド認証境界、詳細ページエラー隠蔽、バックエンドイベント書き込みのアトミック性、関連IDバリデーション、Proposalアクティビティルーティング、Claimイベントペイロード整合性、フロントエンドlint自動化に関する重大な問題は、現在のコードベースで修正済みです。
+
+今回の更新では、確認された活発な高確信度のアプリケーション不具合はありません。
+
+## 解決済み検出事項
+
+| 状態 | 領域 | 現在の状況 |
+| --- | --- | --- |
+| 解決済み | フロントエンド認証 | ブラウザトリガーのミューテーションは `frontend/src/lib/actions.ts` のサーバーアクション経由で行われるようになり、クライアントコンポーネントが `CS_API_TOKEN` を直接読み取ることに依存しなくなった。 |
+| 解決済み | フロントエンドエラー処理 | 詳細ページは実際の `404` APIレスポンスに対してのみ `notFound()` を呼び出し、他の障害は再スローするようになった。 |
+| 解決済み | バックエンド一貫性 | サービスは同一のSQLAlchemyセッションおよびコミット境界内でイベントを追加してから書き込みを永続化するようになった。 |
+| 解決済み | 関連IDバリデーション | Claim、Concept、Term、Evidence、Context、Connection、CIRの書き込みパスが、部分的な変更適用の代わりに欠落した関連IDを明示的に拒否するようになった。 |
+| 解決済み | フロントエンドナビゲーション | ProposalおよびCross-fieldアクティビティリンクが `/review` や `/suggestions` など既存のフロントエンド遷移先を指すようになった。 |
+| 解決済み | イベントペイロード整合性 | `ClaimCreated.context_names` がContext IDではなくリンクされた `Context.name` の値から取得されるようになった。 |
+| 解決済み | フロントエンドlint自動化 | `npm run lint` は現在のフロントエンドセットアップで自動化に対応し、typecheck、テスト、ビルドと共に通過する。 |
+| 解決済み | APIスキーマ型付け | Proposal詳細レスポンスが広い `object` フィールドを公開する代わりに、型付きの `ProposalRead` 契約を拡張するようになった。 |
+
+## 残存する検出事項
+
+### 1. Pytestが Python 3.14 非推奨警告を出力
+
+**重大度**
+
+低
+
+**根拠**
+
+- `backend` と `cli` の現在のローカル検証実行で、`pytest_asyncio` がPython 3.14における `asyncio.get_event_loop_policy()` と `asyncio.set_event_loop_policy()` に関する非推奨警告を出力。
+
+**影響**
+
+アプリケーションコード自体は通過しますが、警告ノイズにより検証出力が読みにくくなり、PythonがこれらのAPIを削除した際の将来の互換性作業が必要であることを示しています。
+
+**推奨修正**
+
+互換性のある `pytest-asyncio` パスが選択されたら非同期テストツールスタックをアップグレードまたは調整するか、非推奨のポリシー呼び出しを避けるインタープリター/ツールの組み合わせを固定する。
+
+## 備考
+
+- 本ファイルは修正前の状態ではなく、現在のコードと検証ベースラインを反映しています。
+- 更新されたベースラインには、トランザクショナルイベント書き込み、厳密なリレーションシップバリデーション、型付きProposal詳細レスポンス、追加のロールバック回帰テストに関する最近のバックエンド修正が含まれます。
+
+---
+
 # Quality Audit
+
+> **🇬🇧 English** | [日本語](#品質監査)
 
 ## Scope
 
-This document summarizes a repository-wide quality audit of the current CollectiveScience prototype. The goal was to identify likely defects, validate the current build and test baseline, and capture the most actionable risks before further feature work.
+This document records the current repository-wide quality audit state after the latest remediation pass. It reflects the present validated status of the prototype rather than the historical list of already-fixed defects.
 
 Audit snapshot:
 
-- Backend: `python -m pytest tests` -> 81 tests passed
-- CLI: `python -m pytest tests` -> 16 tests passed
-- Frontend: `npm run typecheck`, `npm run test -- --run`, and `npm run build` passed
-- Frontend lint: `npm run lint` is currently not automation-safe because it launches the interactive Next.js ESLint setup flow and exits non-zero
+- Backend: `python -m ruff check .` and `python -m pytest tests` -> 102 tests passed
+- CLI: `python -m pytest` -> 16 tests passed
+- Frontend: `npm run lint`, `npm run typecheck`, `npm run test -- --run`, and `npm run build` passed
 
-## Findings Summary
+## Current Status
 
-| Severity | Area | Problem |
+The previously reported critical issues around frontend authentication boundaries, detail-page error masking, backend event-write atomicity, related-ID validation, proposal activity routing, claim event payload integrity, and frontend lint automation have been remediated in the current codebase.
+
+No active high-confidence application defects were confirmed during this refresh.
+
+## Resolved Findings
+
+| Status | Area | Current state |
 | --- | --- | --- |
-| Critical | Frontend auth | Client-side mutations rely on a server-only token source, so authenticated browser actions are likely to fail |
-| Critical | Frontend error handling | Multiple detail pages turn all fetch failures into `404 Not Found`, masking real backend and auth problems |
-| Critical | Backend consistency | Database writes commit before event-store writes, so state and audit history can diverge on failures |
-| Medium | Backend validation | Invalid related IDs are silently dropped instead of rejected |
-| Medium | Frontend navigation | Event links can point to `/proposals/{id}`, but the frontend has no proposal detail route |
-| Medium | Event payload integrity | `ClaimCreated` stores context IDs in `context_names`, corrupting event-derived summaries |
+| Resolved | Frontend auth | Browser-triggered mutations now go through server actions in `frontend/src/lib/actions.ts`, so client components no longer depend on reading `CS_API_TOKEN` directly. |
+| Resolved | Frontend error handling | Detail pages now call `notFound()` only for real `404` API responses and rethrow other failures. |
+| Resolved | Backend consistency | Services now append events inside the same SQLAlchemy session and commit boundary before persisting writes. |
+| Resolved | Related-ID validation | Claim, concept, term, evidence, context, connection, and CIR write paths now reject missing related IDs explicitly instead of partially applying changes. |
+| Resolved | Frontend navigation | Proposal and cross-field activity links now point to existing frontend destinations such as `/review` and `/suggestions`. |
+| Resolved | Event payload integrity | `ClaimCreated.context_names` is populated from linked `Context.name` values rather than context IDs. |
+| Resolved | Frontend lint automation | `npm run lint` is automation-safe in the current frontend setup and passes alongside typecheck, tests, and build. |
+| Resolved | API schema typing | Proposal detail responses now extend the typed `ProposalRead` contract instead of exposing broad `object` fields. |
 
-## Detailed Findings
+## Remaining Findings
 
-### 1. Client-side authenticated mutations are likely broken
+### 1. Pytest emits Python 3.14 deprecation warnings
 
-**Evidence**
+**Severity**
 
-- `frontend/src/lib/api.ts:163-169` builds the `Authorization` header from `process.env.CS_API_TOKEN`
-- Client components call those helpers directly:
-  - `frontend/src/components/CreateClaimDialog.tsx:1-8,51-66`
-  - `frontend/src/components/proposals/ReviewDialog.tsx:1-6,25-34`
-  - `frontend/src/components/claims/ClaimDetail.tsx:13,29-35`
-- Backend write/review routes require authorization:
-  - `backend/app/api/claims.py:38-45`
-  - `backend/app/api/agent.py:31-37`
-  - similar patterns exist in other create/review routes
-
-**Why this matters**
-
-`CS_API_TOKEN` is a server-side environment variable. Browser-executed code cannot reliably use it, so client-triggered create, review, and AI suggestion requests are likely to reach the API without a bearer token and fail with `401` or `403`.
-
-**Recommended fix**
-
-Move authenticated mutations behind a server-only boundary such as Next.js route handlers or server actions, or introduce a real user session/token flow for client requests.
-
-### 2. Detail pages mask real failures as 404s
+Low
 
 **Evidence**
 
-- `frontend/src/app/claims/[id]/page.tsx:10-25`
-- `frontend/src/app/concepts/[id]/page.tsx:9-84`
-- The same `catch { notFound(); }` pattern also appears in context, evidence, and term detail pages
+- Current local validation runs for `backend` and `cli` emit `pytest_asyncio` deprecation warnings referencing `asyncio.get_event_loop_policy()` and `asyncio.set_event_loop_policy()` under Python 3.14.
 
 **Why this matters**
 
-A backend outage, a permission problem, a transient network error, or an LLM-related `503` can be presented to the user as "resource not found". That makes real incidents harder to diagnose and leads users to the wrong conclusion.
+The application code still passes, but warning noise makes validation output harder to read and signals future compatibility work once Python removes these APIs.
 
 **Recommended fix**
 
-Only convert known `404` responses to `notFound()`. Surface `401`, `403`, `500`, and `503` as explicit application errors or dedicated error states.
-
-### 3. Service writes are not atomic with event-store writes
-
-**Evidence**
-
-- `backend/app/services/claim_service.py:51-70`
-- `backend/app/services/claim_service.py:150-168`
-- `backend/app/services/claim_service.py:203-214`
-- The same `session.commit()` followed by `await self._event_store.append(...)` pattern appears in other services, including:
-  - `backend/app/services/concept_service.py:32-36,94-98`
-  - `backend/app/services/context_service.py:29-33,85-89`
-  - `backend/app/services/term_service.py:31-35,85-89`
-  - `backend/app/services/proposal_service.py:59-64`
-
-**Why this matters**
-
-If the event-store write fails after the database commit succeeds, the system keeps the domain change but loses the corresponding audit/event record. That breaks event integrity and any downstream read-model or activity-feed logic derived from events.
-
-**Recommended fix**
-
-Use a single transactional boundary where possible, or introduce an outbox pattern so event publication cannot be lost after a successful database commit.
-
-### 4. Invalid related IDs are silently ignored
-
-**Evidence**
-
-- `backend/app/services/claim_service.py:36-44`
-- `backend/app/services/claim_service.py:123-133`
-- Similar lookup-without-cardinality-check patterns exist in:
-  - `backend/app/services/concept_service.py:29,87`
-  - `backend/app/services/term_service.py:27,80`
-
-**Why this matters**
-
-If a request submits multiple related IDs and some do not exist, the current code loads only the valid rows and silently drops the rest. The request appears to succeed, but the stored relationships do not match the caller's intent.
-
-**Recommended fix**
-
-Validate that every submitted related ID exists before committing. If any are missing, return a clear `400` or `404` instead of partially applying the change.
-
-### 5. Proposal event links point to a missing frontend route
-
-**Evidence**
-
-- `backend/app/events/formatting.py:132-135` maps proposal events to `/proposals/{id}`
-- `frontend/src/app/page.tsx:45-55` renders `event.href` directly in the dashboard activity feed
-- No matching route exists under `frontend/src/app/proposals/**`
-
-**Why this matters**
-
-Recent activity can render links that lead users to a page that does not exist. That makes the dashboard activity feed unreliable as a navigation surface.
-
-**Recommended fix**
-
-Either add a proposal detail route in the frontend or map proposal activity to an existing destination such as `/review` or `/suggestions`.
-
-### 6. `ClaimCreated` event payload uses IDs where names are expected
-
-**Evidence**
-
-- `backend/app/services/claim_service.py:65` sets `context_names=schema.context_ids`
-- `backend/app/events/commands.py:44` defines `context_names` as a list of strings representing names
-- `backend/app/events/projections.py:76,275` carries `context_names` into derived claim summaries
-- `backend/app/workflows/change_applier.py:95-119` shows the intended pattern by collecting actual context names
-
-**Why this matters**
-
-The event payload is internally inconsistent. Anything that consumes `context_names` from events or projections will see UUIDs instead of human-readable context labels.
-
-**Recommended fix**
-
-Populate `context_names` from the linked `Context.name` values when building the `ClaimCreated` event.
-
-## Remediation Order
-
-1. Fix the frontend authentication path for browser-side mutations.
-2. Narrow the use of `notFound()` so it only handles real not-found cases.
-3. Make domain writes and event writes atomic, or adopt an outbox workflow.
-4. Enforce strict related-ID validation instead of partial success.
-5. Align event `href` generation with actual frontend routes.
-6. Correct the `ClaimCreated.context_names` payload field.
-7. Add a real ESLint configuration so `npm run lint` can run non-interactively in CI and local automation.
+Upgrade or adjust the async test tooling stack once a compatible `pytest-asyncio` path is selected, or pin an interpreter/tooling combination that avoids the deprecated policy calls.
 
 ## Notes
 
-- This document captures audit findings only; it does not apply fixes.
-- Existing test and build results indicate that several issues are currently hidden by coverage gaps or runtime-only conditions rather than caught by the present automated checks.
+- This file reflects the current code and validation baseline, not the pre-remediation state captured by earlier audits.
+- The refreshed baseline includes the recent backend fixes for transactional event writes, stricter relationship validation, typed proposal detail responses, and additional rollback regression tests.
