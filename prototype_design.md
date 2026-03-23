@@ -1,8 +1,8 @@
-# CollectiveScience プロトタイプ設計書
+﻿# TsumuGraph プロトタイプ設計書
 
 ## 1. 概要
 
-学問分野を横断する知識を構造化・接続・検証するためのClaim中心知識グラフプラットフォーム「CollectiveScience」のプロトタイプ設計。人類とエージェンティックAIの集合知により、異分野間の概念対応関係を継続的に構築する。
+学問分野を横断する知識を構造化・接続・検証するためのClaim中心知識グラフプラットフォーム「TsumuGraph」のプロトタイプ設計。人類とエージェンティックAIの集合知により、異分野間の概念対応関係を継続的に構築する。
 
 ### 1.1 プロトタイプの目標（Phase 1: MVP）
 
@@ -740,7 +740,7 @@ CREATE TABLE cross_field_connections (
 ## 11. ディレクトリ構成
 
 ```
-collective-science/
+tsumu-graph/
 ├── README.md
 ├── docker-compose.yml
 ├── backend/
@@ -865,7 +865,7 @@ collective-science/
 
 ## 14. DOKP転用マッピング
 
-| DOKP要素 | CollectiveScience対応 | 転用方針 |
+| DOKP要素 | TsumuGraph対応 | 転用方針 |
 |----------|----------------------|---------|
 | Append-only Event Store | Events テーブル | そのまま転用 |
 | Command Algebra (CreateFact / CorrectFact / RetractFact) | ClaimCreated / ClaimUpdated / ClaimRetracted etc. | 修正して転用（ドメインスキーマに合わせ拡張） |

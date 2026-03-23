@@ -1,7 +1,7 @@
 [project]
-name = "collective-science-backend"
+name = "tsumu-graph-backend"
 version = "0.1.0"
-description = "Shared backend scaffolding for the CollectiveScience MVP"
+description = "Shared backend scaffolding for the TsumuGraph MVP"
 requires-python = ">=3.11"
 dependencies = [
   "alembic>=1.14.0,<2.0.0",

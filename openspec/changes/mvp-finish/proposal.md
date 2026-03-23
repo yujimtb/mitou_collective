@@ -1,6 +1,6 @@
-## Why
+﻿## Why
 
-CollectiveScienceプロトタイプは `mvp-completion` changeにより LLM接続とエンティティ作成フォームが追加されたが、`prototype_design.md` Section 1.1 のMVP要件と照合すると以下の12ギャップが残っている。これらが未解決のままでは「研究者・企業担当者にデモ可能な動くWebプロトタイプ」の基準を満たせない。
+TsumuGraphプロトタイプは `mvp-completion` changeにより LLM接続とエンティティ作成フォームが追加されたが、`prototype_design.md` Section 1.1 のMVP要件と照合すると以下の12ギャップが残っている。これらが未解決のままでは「研究者・企業担当者にデモ可能な動くWebプロトタイプ」の基準を満たせない。
 
 1. **Context絞り込みが動作しない（バグ）** — フロントエンドがContext IDを送信するが、バックエンドはContext名で照合しており、フィルタ結果が常に空になる
 2. **Claim変更履歴が空白表示** — バックエンドが生イベントを返すが、フロントエンドが `title`/`summary`/`actor_name` を期待しており不一致

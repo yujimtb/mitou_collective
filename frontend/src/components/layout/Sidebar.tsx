@@ -21,7 +21,7 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar panel">
-      <p className="eyebrow">CollectiveScience</p>
+      <p className="eyebrow">TsumuGraph</p>
       <h2 className="hero-title" style={{ fontSize: "2rem" }}>
         Claim Atlas
       </h2>

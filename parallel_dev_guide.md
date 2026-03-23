@@ -1,4 +1,4 @@
-# CollectiveScience 並行開発ガイド
+﻿# TsumuGraph 並行開発ガイド
 
 複数のコーディングエージェントが並行して作業できるよう、プロジェクトを独立したトラックに分割する。各トラックはファイルレベルで衝突しないように設計されている。
 
@@ -596,7 +596,7 @@ cd cli && python -m pytest -q
 各エージェントに渡す指示の雛形:
 
 ```
-あなたは CollectiveScience プロジェクトの [Agent X: トラック名] を担当します。
+あなたは TsumuGraph プロジェクトの [Agent X: トラック名] を担当します。
 
 ## コンテキスト
 - プロジェクト概要: prototype_design.md を参照

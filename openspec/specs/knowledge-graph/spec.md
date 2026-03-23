@@ -1,8 +1,8 @@
-# Knowledge Graph Data Model Specification
+﻿# Knowledge Graph Data Model Specification
 
 ## Purpose
 
-CollectiveScienceの中核データモデルを定義する。Claim（主張）を中心ノードとし、Term（語）/ Concept（意味）/ Referent（指示物）の三層分離、Context（理論文脈）による多元的構造、Evidence（根拠）による信頼性の裏付け、CIR（Controlled Intermediate Representation）による構造化表現を統合的に扱う知識グラフである。
+TsumuGraphの中核データモデルを定義する。Claim（主張）を中心ノードとし、Term（語）/ Concept（意味）/ Referent（指示物）の三層分離、Context（理論文脈）による多元的構造、Evidence（根拠）による信頼性の裏付け、CIR（Controlled Intermediate Representation）による構造化表現を統合的に扱う知識グラフである。
 
 ## Requirements
 

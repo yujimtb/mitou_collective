@@ -1,8 +1,8 @@
-# REST API Specification
+﻿# REST API Specification
 
 ## Purpose
 
-CollectiveScienceのすべての機能を外部から利用可能にするREST APIを定義する。Claim中心知識グラフのCRUD操作、Proposal/Reviewワークフロー、AI Linking Agent、検索機能をHTTPエンドポイントとして提供する。
+TsumuGraphのすべての機能を外部から利用可能にするREST APIを定義する。Claim中心知識グラフのCRUD操作、Proposal/Reviewワークフロー、AI Linking Agent、検索機能をHTTPエンドポイントとして提供する。
 
 ## Requirements
 

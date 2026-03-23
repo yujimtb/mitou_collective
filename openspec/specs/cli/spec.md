@@ -1,8 +1,8 @@
-# CLI Specification
+﻿# CLI Specification
 
 ## Purpose
 
-CollectiveScienceのREST APIをコマンドラインから操作するためのCLIツール（`cs`コマンド）を定義する。研究者やエンジニアがスクリプトやシェルからClaim操作、レビュー、AI接続候補生成を効率的に実行できるようにする。
+TsumuGraphのREST APIをコマンドラインから操作するためのCLIツール（`cs`コマンド）を定義する。研究者やエンジニアがスクリプトやシェルからClaim操作、レビュー、AI接続候補生成を効率的に実行できるようにする。
 
 ## Requirements
 

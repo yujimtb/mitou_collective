@@ -1,6 +1,6 @@
-## Context
+﻿## Context
 
-CollectiveScienceプロトタイプは全レイヤー（Models, Events, Auth, Services, Workflows, Agent, API, CLI, Web UI, Seeds）が実装済みで、バックエンドテスト61/61パス、フロントエンドビルド成功の状態にある。
+TsumuGraphプロトタイプは全レイヤー（Models, Events, Auth, Services, Workflows, Agent, API, CLI, Web UI, Seeds）が実装済みで、バックエンドテスト61/61パス、フロントエンドビルド成功の状態にある。
 
 しかしMVPデモ完成には2つのギャップが残る:
 

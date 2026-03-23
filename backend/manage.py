@@ -1,4 +1,4 @@
-"""Management commands for the CollectiveScience backend."""
+"""Management commands for the TsumuGraph backend."""
 from __future__ import annotations
 
 import json
@@ -15,7 +15,7 @@ def seed():
     from app.models import Base
     from app.seeds.entropy_dataset import seed_entropy_dataset
 
-    database_url = os.getenv("DATABASE_URL", "sqlite:///./collective_science.db")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///./tsumu_graph.db")
     engine = create_engine(
         database_url,
         **({"connect_args": {"check_same_thread": False}} if database_url.startswith("sqlite") else {}),
@@ -47,7 +47,7 @@ def create_admin():
     from app.schemas import ActorRead, ActorType, TrustLevel
     from app.auth.jwt import create_access_token
 
-    database_url = os.getenv("DATABASE_URL", "sqlite:///./collective_science.db")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///./tsumu_graph.db")
     engine = create_engine(
         database_url,
         **({"connect_args": {"check_same_thread": False}} if database_url.startswith("sqlite") else {}),

@@ -1,8 +1,8 @@
-# Web UI Specification
+﻿# Web UI Specification
 
 ## Purpose
 
-CollectiveScienceのClaim中心知識グラフを研究者および企業R&D部門が直感的に操作できるWebアプリケーションを定義する。Claim一覧・詳細表示、Contextによる絞り込み、Evidenceカード表示、AI接続候補のレビュー、グラフビューを提供する。
+TsumuGraphのClaim中心知識グラフを研究者および企業R&D部門が直感的に操作できるWebアプリケーションを定義する。Claim一覧・詳細表示、Contextによる絞り込み、Evidenceカード表示、AI接続候補のレビュー、グラフビューを提供する。
 
 ## Requirements
 

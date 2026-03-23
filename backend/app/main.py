@@ -46,7 +46,7 @@ SERVICE_STATE_KEYS = (
 
 
 def _build_engine():
-    database_url = os.getenv("DATABASE_URL", "sqlite:///./collective_science.db")
+    database_url = os.getenv("DATABASE_URL", "sqlite:///./tsumu_graph.db")
     if database_url.startswith("sqlite"):
         return create_engine(
             database_url,
@@ -142,7 +142,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app(service_overrides: Mapping[str, object] | None = None) -> FastAPI:
     app = FastAPI(
-        title="CollectiveScience API",
+        title="TsumuGraph API",
         version="0.1.0",
         lifespan=lifespan if not service_overrides else None,
     )

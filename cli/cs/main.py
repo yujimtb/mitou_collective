@@ -13,7 +13,7 @@ from cs.commands.search import query as search_command
 from cs.commands.term import app as term_app
 
 
-app = typer.Typer(no_args_is_help=True, help="CollectiveScience command line interface")
+app = typer.Typer(no_args_is_help=True, help="TsumuGraph command line interface")
 app.add_typer(auth_app, name="auth")
 app.add_typer(claim_app, name="claim")
 app.add_typer(concept_app, name="concept")

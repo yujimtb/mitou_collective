@@ -1,4 +1,4 @@
-# ロードマップ
+﻿# ロードマップ
 
 > **🇯🇵 日本語** | [English](#roadmap)
 
@@ -79,7 +79,7 @@ be rebuilt later when the CQRS read path is introduced.
 ## 長期ビジョン
 
 1. TermとClaimの多言語サポート。
-2. 複数のCollectiveScienceインスタンス間のフェデレーション。
+2. 複数のTsumuGraphインスタンス間のフェデレーション。
 3. AIエージェントの自律性レベル（全人間レビューから半自律まで）。
 4. 協調編集と競合解決。
 5. パブリックAPIとパートナー向けインテグレーション。
@@ -167,7 +167,7 @@ be rebuilt later when the CQRS read path is introduced.
 ## Long-Term Vision
 
 1. Multi-language support for terms and claims.
-2. Federation across multiple CollectiveScience instances.
+2. Federation across multiple TsumuGraph instances.
 3. AI agent autonomy levels, from human-review-all to semi-autonomous.
 4. Collaborative editing and conflict resolution.
 5. Public API and partner-facing integrations.

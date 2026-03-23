@@ -6,7 +6,7 @@ import { ToastProvider } from "@/components/Toast";
 import { Sidebar } from "@/components/layout/Sidebar";
 
 export const metadata: Metadata = {
-  title: "CollectiveScience",
+  title: "TsumuGraph",
   description: "Claim-centric knowledge graph interface for cross-domain research review.",
 };
 

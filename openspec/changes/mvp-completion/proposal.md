@@ -1,6 +1,6 @@
-## Why
+﻿## Why
 
-CollectiveScienceプロトタイプは全レイヤーの土台が実装済みだが、MVPとしてデモ可能な状態にするには2つの重要なギャップがある。
+TsumuGraphプロトタイプは全レイヤーの土台が実装済みだが、MVPとしてデモ可能な状態にするには2つの重要なギャップがある。
 
 1. **AI Linking Agentが実LLMに未接続** — `CandidateGenerator`はcallable `llm_client`を受け取る設計だが、OpenAI/Claude等の実APIクライアント実装が存在せず、設計書の「AIで接続候補提案」を動作させられない。
 2. **Web UIにエンティティ作成フォームがない** — Claim、Concept、Context、Evidenceの閲覧・レビューは機能するが、作成フォームやProposal手動送信UIがなく、デモ時にUIだけで操作が完結しない。

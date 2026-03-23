@@ -1,1 +1,1 @@
-"""CollectiveScience backend application package."""
+"""TsumuGraph backend application package."""

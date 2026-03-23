@@ -15,8 +15,8 @@ class JWTSettings:
     secret_key: str = os.getenv("JWT_SECRET_KEY", "development-secret-key")
     algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
     expiry_minutes: int = int(os.getenv("JWT_EXPIRY_MINUTES", "60"))
-    issuer: str = os.getenv("JWT_ISSUER", "collective-science")
-    audience: str = os.getenv("JWT_AUDIENCE", "collective-science-api")
+    issuer: str = os.getenv("JWT_ISSUER", "tsumu-graph")
+    audience: str = os.getenv("JWT_AUDIENCE", "tsumu-graph-api")
 
 
 class TokenPayload(SchemaModel):

@@ -1,8 +1,8 @@
-# アーキテクチャ概要
+﻿# アーキテクチャ概要
 
 > **🇯🇵 日本語** | [English](#architecture-overview)
 
-CollectiveScienceは、科学的知識を構造化グラフとして表現し、分野横断的な概念的つながりを探索するClaim中心の知識プラットフォームです。Claim、Context、Evidence、Proposal、Review、分野横断接続はすべてファーストクラスオブジェクトです。
+TsumuGraphは、科学的知識を構造化グラフとして表現し、分野横断的な概念的つながりを探索するClaim中心の知識プラットフォームです。Claim、Context、Evidence、Proposal、Review、分野横断接続はすべてファーストクラスオブジェクトです。
 
 ## コアデータモデル
 
@@ -174,7 +174,7 @@ CollectiveScienceは、科学的知識を構造化グラフとして表現し、
 
 > **🇬🇧 English** | [日本語](#アーキテクチャ概要)
 
-CollectiveScience is a claim-centered knowledge platform for representing scientific knowledge as a structured graph and exploring conceptual links across disciplines. Claims, contexts, evidence, proposals, reviews, and cross-field connections are all first-class objects.
+TsumuGraph is a claim-centered knowledge platform for representing scientific knowledge as a structured graph and exploring conceptual links across disciplines. Claims, contexts, evidence, proposals, reviews, and cross-field connections are all first-class objects.
 
 ## Core Data Model
 

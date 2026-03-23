@@ -1,7 +1,7 @@
 [project]
-name = "collective-science-cli"
+name = "tsumu-graph-cli"
 version = "0.1.0"
-description = "CLI for the CollectiveScience REST API"
+description = "CLI for the TsumuGraph REST API"
 requires-python = ">=3.11"
 dependencies = [
   "httpx>=0.28.0,<1.0.0",

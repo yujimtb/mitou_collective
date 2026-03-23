@@ -1,30 +1,30 @@
 services:
   postgres:
     image: postgres:16
-    container_name: collective-science-postgres
+    container_name: tsumu-graph-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: collective_science
-      POSTGRES_USER: collective_science
-      POSTGRES_PASSWORD: collective_science
+      POSTGRES_DB: tsumu_graph
+      POSTGRES_USER: tsumu_graph
+      POSTGRES_PASSWORD: tsumu_graph
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U collective_science -d collective_science"]
+      test: ["CMD-SHELL", "pg_isready -U tsumu_graph -d tsumu_graph"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
     build: ./backend
-    container_name: collective-science-backend
+    container_name: tsumu-graph-backend
     restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+psycopg://collective_science:collective_science@postgres:5432/collective_science
+      DATABASE_URL: postgresql+psycopg://tsumu_graph:tsumu_graph@postgres:5432/tsumu_graph
       JWT_SECRET: change-me-in-production
       CORS_ORIGINS: http://localhost:3000
       SEED_ON_STARTUP: "true"
@@ -47,7 +47,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: collective-science-frontend
+    container_name: tsumu-graph-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
