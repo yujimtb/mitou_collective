@@ -5,9 +5,9 @@ from sqlalchemy.orm import selectinload
 
 from app.events.commands import EvidenceCreated, EvidenceLinkedToClaim
 from app.interfaces import IEvidenceService, IEventStore
-from app.models import ClaimEvidence, Evidence
+from app.models import Claim, ClaimEvidence, Evidence
 from app.schemas import EvidenceCreate, EvidenceRead, EvidenceUpdate, PaginatedResponse
-from app.services._shared import SessionFactory, actor_to_ref, paginate, parse_uuid
+from app.services._shared import SessionFactory, actor_to_ref, load_required_records, paginate, parse_uuid
 
 
 class EvidenceService(IEvidenceService):
@@ -17,6 +17,24 @@ class EvidenceService(IEvidenceService):
 
     async def create(self, payload: EvidenceCreate, actor_id: str) -> EvidenceRead:
         with self._session_factory() as session:
+            claims_by_id: dict[str, Claim] = {}
+            if payload.claim_links:
+                claim_ids = [link.claim_id for link in payload.claim_links]
+                claims_by_id = {
+                    claim_id: claim
+                    for claim_id, claim in zip(
+                        claim_ids,
+                        load_required_records(
+                            session,
+                            Claim,
+                            claim_ids,
+                            field_name="claim_id",
+                            entity_label="Claim",
+                        ),
+                        strict=True,
+                    )
+                }
+
             evidence = Evidence(
                 evidence_type=payload.evidence_type,
                 title=payload.title,
@@ -28,39 +46,43 @@ class EvidenceService(IEvidenceService):
             session.add(evidence)
             session.flush()
             for link in payload.claim_links:
+                claim = claims_by_id[link.claim_id]
                 session.add(
                     ClaimEvidence(
-                        claim_id=parse_uuid(link.claim_id, field_name="claim_id"),
+                        claim_id=claim.id,
                         evidence_id=evidence.id,
                         relationship_type=link.relationship,
                     )
                 )
-            session.commit()
+            session.flush()
             persisted = session.scalar(self._detail_statement().where(Evidence.id == evidence.id))
             assert persisted is not None
             schema = self._to_schema(persisted)
 
-        await self._event_store.append(
-            **EvidenceCreated(
-                aggregate_id=schema.id,
-                actor_id=actor_id,
-                evidence_type=schema.evidence_type.value,
-                title=schema.title,
-                source=schema.source,
-                reliability=schema.reliability.value,
-                excerpt=schema.excerpt,
-                claim_links=[link.model_dump() for link in schema.claim_links],
-            ).to_event()
-        )
-        for link in schema.claim_links:
             await self._event_store.append(
-                **EvidenceLinkedToClaim(
+                **EvidenceCreated(
                     aggregate_id=schema.id,
                     actor_id=actor_id,
-                    claim_id=link.claim_id,
-                    relationship=link.relationship.value,
-                ).to_event()
+                    evidence_type=schema.evidence_type.value,
+                    title=schema.title,
+                    source=schema.source,
+                    reliability=schema.reliability.value,
+                    excerpt=schema.excerpt,
+                    claim_links=[link.model_dump() for link in schema.claim_links],
+                ).to_event(),
+                session=session,
             )
+            for link in schema.claim_links:
+                await self._event_store.append(
+                    **EvidenceLinkedToClaim(
+                        aggregate_id=schema.id,
+                        actor_id=actor_id,
+                        claim_id=link.claim_id,
+                        relationship=link.relationship.value,
+                    ).to_event(),
+                    session=session,
+                )
+            session.commit()
         return schema
 
     async def get(self, evidence_id: str) -> EvidenceRead:
@@ -99,9 +121,24 @@ class EvidenceService(IEvidenceService):
             for field_name, value in changes.items():
                 setattr(evidence, field_name, value)
             if claim_links is not None:
+                claim_ids = [link["claim_id"] for link in claim_links]
+                claims_by_id = {
+                    claim_id: claim
+                    for claim_id, claim in zip(
+                        claim_ids,
+                        load_required_records(
+                            session,
+                            Claim,
+                            claim_ids,
+                            field_name="claim_id",
+                            entity_label="Claim",
+                        ),
+                        strict=True,
+                    )
+                }
                 evidence.claim_links = [
                     ClaimEvidence(
-                        claim_id=parse_uuid(link["claim_id"], field_name="claim_id"),
+                        claim_id=claims_by_id[link["claim_id"]].id,
                         evidence_id=evidence_uuid,
                         relationship_type=link["relationship"],
                     )
@@ -109,18 +146,20 @@ class EvidenceService(IEvidenceService):
                 ]
                 changes["claim_links"] = claim_links
             session.add(evidence)
-            session.commit()
+            session.flush()
             persisted = session.scalar(self._detail_statement().where(Evidence.id == evidence_uuid))
             assert persisted is not None
             schema = self._to_schema(persisted)
 
-        await self._event_store.append(
-            event_type="EvidenceUpdated",
-            aggregate_type="evidence",
-            aggregate_id=evidence_id,
-            payload={"changes": changes},
-            actor_id=actor_id,
-        )
+            await self._event_store.append(
+                event_type="EvidenceUpdated",
+                aggregate_type="evidence",
+                aggregate_id=evidence_id,
+                payload={"changes": changes},
+                actor_id=actor_id,
+                session=session,
+            )
+            session.commit()
         return schema
 
     @staticmethod

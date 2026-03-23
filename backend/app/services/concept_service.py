@@ -7,7 +7,7 @@ from app.events.commands import ConceptCreated, ConceptUpdated
 from app.interfaces import IConceptService, IEventStore
 from app.models import ClaimConcept, Concept, CrossFieldConnection, Referent, Term
 from app.schemas import ConceptCreate, ConceptRead, ConceptUpdate, CrossFieldConnectionRead, PaginatedResponse
-from app.services._shared import SessionFactory, actor_to_ref, paginate, parse_uuid
+from app.services._shared import SessionFactory, actor_to_ref, load_required_records, paginate, parse_uuid
 
 
 class ConceptService(IConceptService):
@@ -28,14 +28,13 @@ class ConceptService(IConceptService):
                 created_by_id=parse_uuid(actor_id, field_name="actor_id"),
             )
             if payload.term_ids:
-                parsed_term_ids = [parse_uuid(term_id, field_name="term_id") for term_id in payload.term_ids]
-                terms = list(
-                    session.scalars(select(Term).where(Term.id.in_(parsed_term_ids))).all()
+                terms = load_required_records(
+                    session,
+                    Term,
+                    payload.term_ids,
+                    field_name="term_id",
+                    entity_label="Term",
                 )
-                if len(terms) != len(payload.term_ids):
-                    found = {str(t.id) for t in terms}
-                    missing = set(payload.term_ids) - found
-                    raise ValueError(f"Term IDs not found: {missing}")
                 concept.terms = terms
             session.add(concept)
             session.flush()
@@ -95,12 +94,13 @@ class ConceptService(IConceptService):
             for field_name, value in changes.items():
                 setattr(concept, field_name, value)
             if term_ids is not None:
-                parsed_term_ids = [parse_uuid(term_id, field_name="term_id") for term_id in term_ids]
-                terms = list(session.scalars(select(Term).where(Term.id.in_(parsed_term_ids))).all())
-                if len(terms) != len(term_ids):
-                    found = {str(term.id) for term in terms}
-                    missing = set(term_ids) - found
-                    raise ValueError(f"Term IDs not found: {missing}")
+                terms = load_required_records(
+                    session,
+                    Term,
+                    term_ids,
+                    field_name="term_id",
+                    entity_label="Term",
+                )
                 concept.terms = terms
                 changes["term_ids"] = term_ids
             if "referent_id" in payload.model_fields_set:

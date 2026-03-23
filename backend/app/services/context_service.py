@@ -7,7 +7,7 @@ from app.events.commands import ContextCreated, ContextUpdated
 from app.interfaces import IContextService, IEventStore
 from app.models import Context
 from app.schemas import ContextCreate, ContextRead, ContextUpdate, PaginatedResponse
-from app.services._shared import SessionFactory, actor_to_ref, paginate, parse_uuid
+from app.services._shared import SessionFactory, actor_to_ref, paginate, parse_uuid, require_related_record
 
 
 class ContextService(IContextService):
@@ -17,12 +17,22 @@ class ContextService(IContextService):
 
     async def create(self, payload: ContextCreate, actor_id: str) -> ContextRead:
         with self._session_factory() as session:
+            parent_context_id = None
+            if payload.parent_context_id:
+                parent_context = require_related_record(
+                    session,
+                    Context,
+                    payload.parent_context_id,
+                    field_name="parent_context_id",
+                    entity_label="Parent context",
+                )
+                parent_context_id = parent_context.id
             context = Context(
                 name=payload.name,
                 description=payload.description,
                 field=payload.field,
                 assumptions=list(payload.assumptions),
-                parent_context_id=parse_uuid(payload.parent_context_id, field_name="parent_context_id") if payload.parent_context_id else None,
+                parent_context_id=parent_context_id,
                 created_by_id=parse_uuid(actor_id, field_name="actor_id"),
             )
             session.add(context)
@@ -78,7 +88,19 @@ class ContextService(IContextService):
                 raise LookupError(f"context '{context_id}' not found")
             if "parent_context_id" in changes:
                 value = changes["parent_context_id"]
-                context.parent_context_id = parse_uuid(value, field_name="parent_context_id") if value else None
+                if value:
+                    parent_context = require_related_record(
+                        session,
+                        Context,
+                        value,
+                        field_name="parent_context_id",
+                        entity_label="Parent context",
+                    )
+                    if parent_context.id == context.id:
+                        raise ValueError("parent_context_id must reference a different context")
+                    context.parent_context_id = parent_context.id
+                else:
+                    context.parent_context_id = None
             for field_name, value in changes.items():
                 if field_name == "parent_context_id":
                     continue

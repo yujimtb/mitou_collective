@@ -98,20 +98,19 @@ class ReviewService(IReviewService):
                 )
 
             session.add(proposal)
-            session.commit()
+            for event in pending_events:
+                await self._event_store.append(
+                    event_type=event.event_type,
+                    aggregate_type=event.aggregate_type,
+                    aggregate_id=event.aggregate_id,
+                    payload=event.payload,
+                    actor_id=event.actor_id,
+                    proposal_id=event.proposal_id,
+                    session=session,
+                )
             session.refresh(review)
-
             result = self._to_schema(review)
-
-        for event in pending_events:
-            await self._event_store.append(
-                event_type=event.event_type,
-                aggregate_type=event.aggregate_type,
-                aggregate_id=event.aggregate_id,
-                payload=event.payload,
-                actor_id=event.actor_id,
-                proposal_id=event.proposal_id,
-            )
+            session.commit()
 
         return result
 

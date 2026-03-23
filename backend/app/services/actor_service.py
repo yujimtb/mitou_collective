@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 import uuid
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.interfaces import IActorService

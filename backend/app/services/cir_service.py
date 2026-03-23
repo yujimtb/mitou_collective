@@ -3,9 +3,9 @@ from __future__ import annotations
 from sqlalchemy import select
 
 from app.interfaces import ICIRService, IEventStore
-from app.models import CIR
+from app.models import CIR, Claim
 from app.schemas import CIRCreate, CIRRead, CIRUpdate
-from app.services._shared import SessionFactory, parse_uuid
+from app.services._shared import SessionFactory, parse_uuid, require_related_record
 
 
 class CIRService(ICIRService):
@@ -15,8 +15,15 @@ class CIRService(ICIRService):
 
     async def create(self, payload: CIRCreate, actor_id: str) -> CIRRead:
         with self._session_factory() as session:
+            claim = require_related_record(
+                session,
+                Claim,
+                payload.claim_id,
+                field_name="claim_id",
+                entity_label="Claim",
+            )
             cir = CIR(
-                claim_id=parse_uuid(payload.claim_id, field_name="claim_id"),
+                claim_id=claim.id,
                 context_ref=payload.context_ref,
                 subject=payload.subject,
                 relation=payload.relation,
@@ -26,17 +33,19 @@ class CIRService(ICIRService):
                 definition_refs=list(payload.definition_refs),
             )
             session.add(cir)
-            session.commit()
+            session.flush()
             session.refresh(cir)
             schema = self._to_schema(cir)
 
-        await self._event_store.append(
-            event_type="CIRCreated",
-            aggregate_type="cir",
-            aggregate_id=schema.id,
-            payload=schema.model_dump(exclude={"created_at"}),
-            actor_id=actor_id,
-        )
+            await self._event_store.append(
+                event_type="CIRCreated",
+                aggregate_type="cir",
+                aggregate_id=schema.id,
+                payload=schema.model_dump(exclude={"created_at"}),
+                actor_id=actor_id,
+                session=session,
+            )
+            session.commit()
         return schema
 
     async def get_by_claim(self, claim_id: str) -> CIRRead | None:
@@ -59,17 +68,19 @@ class CIRService(ICIRService):
             for field_name, value in changes.items():
                 setattr(cir, field_name, value)
             session.add(cir)
-            session.commit()
+            session.flush()
             session.refresh(cir)
             schema = self._to_schema(cir)
 
-        await self._event_store.append(
-            event_type="CIRUpdated",
-            aggregate_type="cir",
-            aggregate_id=schema.id,
-            payload={"claim_id": claim_id, "changes": changes},
-            actor_id=actor_id,
-        )
+            await self._event_store.append(
+                event_type="CIRUpdated",
+                aggregate_type="cir",
+                aggregate_id=schema.id,
+                payload={"claim_id": claim_id, "changes": changes},
+                actor_id=actor_id,
+                session=session,
+            )
+            session.commit()
         return schema
 
     @staticmethod

@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from app.interfaces import IEventStore, ITermService
 from app.models import Concept, Term
 from app.schemas import PaginatedResponse, TermCreate, TermRead, TermUpdate
-from app.services._shared import SessionFactory, actor_to_ref, paginate, parse_uuid
+from app.services._shared import SessionFactory, actor_to_ref, load_required_records, paginate, parse_uuid
 
 
 class TermService(ITermService):
@@ -23,12 +23,13 @@ class TermService(ITermService):
                 created_by_id=parse_uuid(actor_id, field_name="actor_id"),
             )
             if payload.concept_ids:
-                parsed_concept_ids = [parse_uuid(concept_id, field_name="concept_id") for concept_id in payload.concept_ids]
-                concepts = session.scalars(select(Concept).where(Concept.id.in_(parsed_concept_ids))).all()
-                if len(concepts) != len(payload.concept_ids):
-                    found = {str(concept.id) for concept in concepts}
-                    missing = set(payload.concept_ids) - found
-                    raise ValueError(f"Concept IDs not found: {missing}")
+                concepts = load_required_records(
+                    session,
+                    Concept,
+                    payload.concept_ids,
+                    field_name="concept_id",
+                    entity_label="Concept",
+                )
                 term.concepts = list(concepts)
             session.add(term)
             session.flush()
@@ -81,12 +82,13 @@ class TermService(ITermService):
             for field_name, value in changes.items():
                 setattr(term, field_name, value)
             if concept_ids is not None:
-                parsed_concept_ids = [parse_uuid(concept_id, field_name="concept_id") for concept_id in concept_ids]
-                concepts = session.scalars(select(Concept).where(Concept.id.in_(parsed_concept_ids))).all()
-                if len(concepts) != len(concept_ids):
-                    found = {str(concept.id) for concept in concepts}
-                    missing = set(concept_ids) - found
-                    raise ValueError(f"Concept IDs not found: {missing}")
+                concepts = load_required_records(
+                    session,
+                    Concept,
+                    concept_ids,
+                    field_name="concept_id",
+                    entity_label="Concept",
+                )
                 term.concepts = list(concepts)
                 changes["concept_ids"] = concept_ids
             session.add(term)

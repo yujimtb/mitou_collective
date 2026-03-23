@@ -26,5 +26,7 @@ def test_proposal_create_get_and_review(client, contributor_auth_header, reviewe
     assert list_response.status_code == 200
     assert detail_response.status_code == 200
     assert detail_response.json()["reviews"] == []
+    assert isinstance(detail_response.json()["created_at"], str)
+    assert detail_response.json()["proposed_by"]["trust_level"] == "contributor"
     assert review_response.status_code == 201
     assert review_response.json()["decision"] == "reject"

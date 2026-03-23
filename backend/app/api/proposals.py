@@ -18,21 +18,7 @@ from app.schemas import (
     ReviewCreate,
     ReviewRead,
 )
-from app.schemas.common import SchemaModel
-
-
-class ProposalDetailRead(SchemaModel):
-    id: str
-    proposal_type: ProposalType
-    proposed_by: object
-    target_entity_type: str
-    target_entity_id: str | None = None
-    payload: dict[str, object] = Field(default_factory=dict)
-    rationale: str
-    status: ProposalStatus
-    created_at: object
-    reviewed_at: object | None = None
-    reviewed_by: object | None = None
+class ProposalDetailRead(ProposalRead):
     reviews: list[ReviewRead] = Field(default_factory=list)
 
 

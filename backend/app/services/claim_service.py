@@ -11,7 +11,7 @@ from app.events.formatting import DEFAULT_EVENT_TYPE_LABELS, event_title, summar
 from app.interfaces import IClaimService, IEventStore
 from app.models import Actor, CIR, Claim, ClaimConcept, ClaimContext, ClaimEvidence, Concept, Context, Evidence
 from app.schemas import CIRRead, ClaimCreate, ClaimRead, ClaimUpdate, PaginatedResponse, TrustStatus
-from app.services._shared import SessionFactory, actor_to_ref, paginate, parse_uuid
+from app.services._shared import SessionFactory, actor_to_ref, load_required_records, paginate, parse_uuid
 
 EVENT_TYPE_LABELS = DEFAULT_EVENT_TYPE_LABELS
 
@@ -34,31 +34,34 @@ class ClaimService(IClaimService):
             session.flush()
 
             if payload.context_ids:
-                parsed_context_ids = [parse_uuid(item, field_name="context_id") for item in payload.context_ids]
-                contexts = session.scalars(select(Context).where(Context.id.in_(parsed_context_ids))).all()
-                if len(contexts) != len(payload.context_ids):
-                    found = {str(c.id) for c in contexts}
-                    missing = set(payload.context_ids) - found
-                    raise ValueError(f"Context IDs not found: {missing}")
+                contexts = load_required_records(
+                    session,
+                    Context,
+                    payload.context_ids,
+                    field_name="context_id",
+                    entity_label="Context",
+                )
                 claim.context_links = [ClaimContext(claim_id=claim.id, context_id=context.id) for context in contexts]
                 context_names = [context.name for context in contexts]
             else:
                 context_names = []
             if payload.concept_ids:
-                parsed_concept_ids = [parse_uuid(item, field_name="concept_id") for item in payload.concept_ids]
-                concepts = session.scalars(select(Concept).where(Concept.id.in_(parsed_concept_ids))).all()
-                if len(concepts) != len(payload.concept_ids):
-                    found = {str(c.id) for c in concepts}
-                    missing = set(payload.concept_ids) - found
-                    raise ValueError(f"Concept IDs not found: {missing}")
+                concepts = load_required_records(
+                    session,
+                    Concept,
+                    payload.concept_ids,
+                    field_name="concept_id",
+                    entity_label="Concept",
+                )
                 claim.concept_links = [ClaimConcept(claim_id=claim.id, concept_id=concept.id, role="related") for concept in concepts]
             if payload.evidence_ids:
-                parsed_evidence_ids = [parse_uuid(item, field_name="evidence_id") for item in payload.evidence_ids]
-                evidence = session.scalars(select(Evidence).where(Evidence.id.in_(parsed_evidence_ids))).all()
-                if len(evidence) != len(payload.evidence_ids):
-                    found = {str(e.id) for e in evidence}
-                    missing = set(payload.evidence_ids) - found
-                    raise ValueError(f"Evidence IDs not found: {missing}")
+                evidence = load_required_records(
+                    session,
+                    Evidence,
+                    payload.evidence_ids,
+                    field_name="evidence_id",
+                    entity_label="Evidence",
+                )
                 claim.evidence_links = [ClaimEvidence(claim_id=claim.id, evidence_id=item.id) for item in evidence]
             if payload.cir_id:
                 cir = session.get(CIR, parse_uuid(payload.cir_id, field_name="cir_id"))
@@ -142,30 +145,33 @@ class ClaimService(IClaimService):
                 setattr(claim, field_name, value)
 
             if context_ids is not None:
-                parsed_context_ids = [parse_uuid(item, field_name="context_id") for item in context_ids]
-                contexts = session.scalars(select(Context).where(Context.id.in_(parsed_context_ids))).all()
-                if len(contexts) != len(context_ids):
-                    found = {str(c.id) for c in contexts}
-                    missing = set(context_ids) - found
-                    raise ValueError(f"Context IDs not found: {missing}")
+                contexts = load_required_records(
+                    session,
+                    Context,
+                    context_ids,
+                    field_name="context_id",
+                    entity_label="Context",
+                )
                 claim.context_links = [ClaimContext(claim_id=claim.id, context_id=context.id) for context in contexts]
                 changes["context_ids"] = context_ids
             if concept_ids is not None:
-                parsed_concept_ids = [parse_uuid(item, field_name="concept_id") for item in concept_ids]
-                concepts = session.scalars(select(Concept).where(Concept.id.in_(parsed_concept_ids))).all()
-                if len(concepts) != len(concept_ids):
-                    found = {str(c.id) for c in concepts}
-                    missing = set(concept_ids) - found
-                    raise ValueError(f"Concept IDs not found: {missing}")
+                concepts = load_required_records(
+                    session,
+                    Concept,
+                    concept_ids,
+                    field_name="concept_id",
+                    entity_label="Concept",
+                )
                 claim.concept_links = [ClaimConcept(claim_id=claim.id, concept_id=concept.id, role="related") for concept in concepts]
                 changes["concept_ids"] = concept_ids
             if evidence_ids is not None:
-                parsed_evidence_ids = [parse_uuid(item, field_name="evidence_id") for item in evidence_ids]
-                evidence = session.scalars(select(Evidence).where(Evidence.id.in_(parsed_evidence_ids))).all()
-                if len(evidence) != len(evidence_ids):
-                    found = {str(e.id) for e in evidence}
-                    missing = set(evidence_ids) - found
-                    raise ValueError(f"Evidence IDs not found: {missing}")
+                evidence = load_required_records(
+                    session,
+                    Evidence,
+                    evidence_ids,
+                    field_name="evidence_id",
+                    entity_label="Evidence",
+                )
                 claim.evidence_links = [ClaimEvidence(claim_id=claim.id, evidence_id=item.id) for item in evidence]
                 changes["evidence_ids"] = evidence_ids
             if "cir_id" in payload.model_fields_set:

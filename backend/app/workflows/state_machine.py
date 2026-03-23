@@ -39,7 +39,7 @@ class ProposalStateMachine:
         return status
 
     def apply_review(self, status: ProposalStatus, decision: ReviewDecision) -> ProposalStatus:
-        current_status = self.start_review(status)
+        self.start_review(status)
 
         if decision is ReviewDecision.APPROVE:
             return ProposalStatus.APPROVED

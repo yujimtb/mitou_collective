@@ -21,17 +21,19 @@ class ReferentService(IReferentService):
         )
         with self._session_factory() as session:
             session.add(referent)
-            session.commit()
+            session.flush()
             session.refresh(referent)
             schema = self._to_schema(referent)
 
-        await self._event_store.append(
-            event_type="ReferentCreated",
-            aggregate_type="referent",
-            aggregate_id=schema.id,
-            payload={"label": schema.label, "description": schema.description},
-            actor_id=actor_id,
-        )
+            await self._event_store.append(
+                event_type="ReferentCreated",
+                aggregate_type="referent",
+                aggregate_id=schema.id,
+                payload={"label": schema.label, "description": schema.description},
+                actor_id=actor_id,
+                session=session,
+            )
+            session.commit()
         return schema
 
     async def get(self, referent_id: str) -> ReferentRead:
@@ -64,17 +66,19 @@ class ReferentService(IReferentService):
             for field_name, value in changes.items():
                 setattr(referent, field_name, value)
             session.add(referent)
-            session.commit()
+            session.flush()
             session.refresh(referent)
             schema = self._to_schema(referent)
 
-        await self._event_store.append(
-            event_type="ReferentUpdated",
-            aggregate_type="referent",
-            aggregate_id=referent_id,
-            payload={"changes": changes},
-            actor_id=actor_id,
-        )
+            await self._event_store.append(
+                event_type="ReferentUpdated",
+                aggregate_type="referent",
+                aggregate_id=referent_id,
+                payload={"changes": changes},
+                actor_id=actor_id,
+                session=session,
+            )
+            session.commit()
         return schema
 
     @staticmethod
